@@ -48,6 +48,8 @@ public class AutomaticScenario {
 
           kgb.addKey(x, (kgb.spaceBarBottom + spaceBarTop) / 2, " ");
 
+          kgb.numRows = 1;
+
           findRowPadding(spaceBarTop);
         } else {
           again();
@@ -82,7 +84,6 @@ public class AutomaticScenario {
     kgb.logTitle("Looking for top row");
     kgb.addCommand(new TapCommand.FindAnyKey(kgb, kgb.navBarSize.x / 2, kgb.spaceBarBottom - kgb.keyHeight / 2, Direction.UP_KEY) {
       public static final String TAG = "findTopRow";
-
       String lastTextReceived;
 
       @Override
@@ -94,7 +95,9 @@ public class AutomaticScenario {
         } else {
           if (textReceived.length() == 1) {
             lastTextReceived = textReceived;
-            kgb.addKey(x, y, textReceived);
+            if (kgb.addKey(x, y, textReceived)) {
+              kgb.numRows++;
+            }
             again();
           } else {
             // completion?
@@ -135,9 +138,9 @@ public class AutomaticScenario {
 
       private void foundTopRow() {
         int keyboardHeight = kgb.spaceBarBottom - y;
-        kgb.numRows = keyboardHeight / kgb.keyHeight;
+        //kgb.numRows = keyboardHeight / kgb.keyHeight;
 
-        kgb.rowPadding = Math.max(kgb.rowPadding, (keyboardHeight % kgb.keyHeight) / kgb.numRows);
+        //kgb.rowPadding = Math.max(kgb.rowPadding, (keyboardHeight % kgb.keyHeight) / kgb.numRows);
         kgb.keyboardTop = y;
 
         Log.d(TAG, "numRows: " + kgb.numRows + " rowPadding " + kgb.rowPadding + " keyboardTop " + kgb.keyboardTop);
@@ -245,11 +248,11 @@ public class AutomaticScenario {
           @Override
           public void onDone(boolean success) {
             Log.d(TAG, "onDone " + success);
-            if (success || kgb.getText().equals("octob")) {
+            if (!success || kgb.getText().equals("octob")) {
               kgb.hasCompletion = false;
               kgb.logLine("Doesn't seem to have completion");
             } else {
-              kgb.hasCompletion = false;
+              kgb.hasCompletion = true;
               kgb.addCompletion(x, y);
             }
 

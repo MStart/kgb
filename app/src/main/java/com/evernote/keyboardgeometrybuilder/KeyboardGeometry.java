@@ -78,6 +78,9 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
     editText.addTextChangedListener(new TextWatcher() {
       @Override
       public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        if (suppressEvents) return;
+
+        Log.d(TAG, "beforeTextChanged '" + s + "' - " + start + " - " + after + " - " + count);
       }
 
       @Override
@@ -238,7 +241,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
 
     // if a touch triggers more than one event (KeyEvent and EditorAction), let both events be handled
     // before sending the next touch (the second one will be suppressed anyway)
-    handler.postDelayed(commandAdder, 100);
+    handler.postDelayed(commandAdder, 500);
   }
 
   public void onTextReceived(String added) {
@@ -251,11 +254,6 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
     } else {
       Log.w(TAG, "onTextReceived no currentCommand");
     }
-  }
-
-  public void eventReceived() {
-    handler.removeCallbacks(eventFailed);
-    suppressEvents = true;
   }
 
   public void onKeyReceived(int keyCode) {
@@ -282,6 +280,11 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
     }
   }
 
+  public void eventReceived() {
+    handler.removeCallbacks(eventFailed);
+    suppressEvents = true;
+  }
+
   Runnable eventFailed = new Runnable() {
     @Override
     public void run() {
@@ -306,6 +309,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
     public void run() {
       try {
         suppressEvents = false;
+        Log.d(TAG, "Enabling events");
         shellCommandRunner.addCommand(currentCommand.getShellCommand());
       } catch (Exception e) {
         Log.e(TAG, "Concurrent commands", e);
