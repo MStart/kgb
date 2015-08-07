@@ -3,6 +3,7 @@
  */
 package com.evernote.keyboardgeometrybuilder;
 
+import android.content.res.Configuration;
 import android.util.Log;
 
 /**
@@ -68,8 +69,12 @@ public abstract class TapCommand implements TouchCommand {
       textReceived = null;
       keyReceived = -1;
 
-      if (x < 0 || x > kgb.screenSize.x
-          || y < kgb.keyboardTop || y > kgb.screenSize.y) {
+      if (x < 0
+          || (kgb.orientation == Configuration.ORIENTATION_PORTRAIT && x > kgb.screenSize.x)
+          || (kgb.orientation == Configuration.ORIENTATION_LANDSCAPE && x > kgb.screenSize.x - kgb.navBarSize.x)
+          || y < kgb.keyboardTop
+          || (kgb.orientation == Configuration.ORIENTATION_PORTRAIT && y > kgb.screenSize.y - kgb.navBarSize.y)
+          || (kgb.orientation == Configuration.ORIENTATION_LANDSCAPE&& y > kgb.screenSize.y)) {
         outOfKeyboard();
       } else {
         kgb.addCommand(this);

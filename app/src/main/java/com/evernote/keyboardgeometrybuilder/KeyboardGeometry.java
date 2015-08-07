@@ -1,6 +1,7 @@
 package com.evernote.keyboardgeometrybuilder;
 
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.os.AsyncTask;
@@ -40,20 +41,22 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
 
   Point navBarSize;
   Point screenSize;
+  Point screenBottom;
   int keyboardTop;
   int spaceBarBottom;
   int keyHeight;
   int minKeyWidth;
   int rowPadding;
   int numRows;
+  int orientation;
   boolean hasCompletion = false;
-  boolean running = true;
 
   public static final int EVENT_DELAY = 1000;
 
   HashMap<KeyInfo,KeyInfo> foundKeys = new HashMap<>();
   private SoftKeyboardStateHelper keyboardStateHelper;
   private TouchView touchView;
+  boolean running = true;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +75,13 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
 
     navBarSize = Util.getNavigationBarSize(this);
     screenSize = Util.getRealScreenSize(this);
+
+    orientation = getResources().getConfiguration().orientation;
+    if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+      screenBottom = new Point(screenSize.x / 2, screenSize.y - navBarSize.y);
+    } else {
+      screenBottom = new Point(screenSize.x / 2 - navBarSize.x, screenSize.y);
+    }
 
     editText.requestFocus();
 

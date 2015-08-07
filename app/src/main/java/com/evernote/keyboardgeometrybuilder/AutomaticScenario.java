@@ -21,7 +21,7 @@ public class AutomaticScenario {
 
   public void findSpaceBar() {
     kgb.logTitle("Looking for space bar");
-    kgb.addCommand(new TapCommand.FindAKey(kgb, kgb.navBarSize.x / 2, kgb.screenSize.y - kgb.navBarSize.y, Direction.UP_PIX, " ") {
+    kgb.addCommand(new TapCommand.FindAKey(kgb, kgb.screenBottom.x, kgb.screenBottom.y, Direction.UP_PIX, " ") {
       public static final String TAG = "findSpaceBar";
       int spaceBarTop;
 
@@ -61,7 +61,7 @@ public class AutomaticScenario {
   public void findRowPadding(final int spaceBarTop) {
     kgb.logTitle("Looking for row padding");
 
-    kgb.addCommand(new TapCommand.FindAnyKey(kgb, kgb.navBarSize.x / 2, spaceBarTop - 1, Direction.UP_PIX) {
+    kgb.addCommand(new TapCommand.FindAnyKey(kgb, kgb.screenBottom.x, spaceBarTop - 1, Direction.UP_PIX) {
       public static final String TAG = "findRowPadding";
 
       @Override
@@ -82,7 +82,7 @@ public class AutomaticScenario {
   public void findTopRow() {
     kgb.clearText();
     kgb.logTitle("Looking for top row");
-    kgb.addCommand(new TapCommand.FindAnyKey(kgb, kgb.navBarSize.x / 2, kgb.spaceBarBottom - kgb.keyHeight / 2, Direction.UP_KEY) {
+    kgb.addCommand(new TapCommand.FindAnyKey(kgb, kgb.screenBottom.x, kgb.spaceBarBottom - kgb.keyHeight / 2, Direction.UP_KEY) {
       public static final String TAG = "findTopRow";
       String lastTextReceived;
 
@@ -118,7 +118,7 @@ public class AutomaticScenario {
 
   public void adjustTopRow(String character, int maxKeyboardTop) {
     kgb.logTitle("Adjusting top row");
-    kgb.addCommand(new TapCommand.FindAKey(kgb, kgb.navBarSize.x / 2, maxKeyboardTop, Direction.DOWN_PIX, character) {
+    kgb.addCommand(new TapCommand.FindAKey(kgb, kgb.screenBottom.x, maxKeyboardTop, Direction.DOWN_PIX, character) {
       public static final String TAG = "adjustTopRow";
 
       @Override
@@ -138,6 +138,7 @@ public class AutomaticScenario {
 
       private void foundTopRow() {
         int keyboardHeight = kgb.spaceBarBottom - y;
+        kgb.keyHeight = Math.max(kgb.keyHeight, keyboardHeight / kgb.numRows);
         //kgb.numRows = keyboardHeight / kgb.keyHeight;
 
         //kgb.rowPadding = Math.max(kgb.rowPadding, (keyboardHeight % kgb.keyHeight) / kgb.numRows);
