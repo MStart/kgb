@@ -65,7 +65,7 @@ public class AutomaticScenario {
       @Override
       public void onDone(boolean success) {
         if (success) {
-          kgb.rowPadding = y - spaceBarTop;
+          kgb.rowPadding = spaceBarTop - y - 1;
 
           kgb.logLine("Row padding: " + kgb.rowPadding);
 
@@ -101,7 +101,7 @@ public class AutomaticScenario {
             kgb.hasCompletion = true;
             kgb.logLine("Has completion");
 
-            adjustTopRow(textReceived, y);
+            adjustTopRow(lastTextReceived, y);
           }
         }
       }
@@ -164,7 +164,7 @@ public class AutomaticScenario {
         } else if (textReceived.length() > 1) {
           // in suggestions?
           kgb.logLine("Incorrect keyboardTop");
-          kgb.done(false);
+          kgb.onScenarioDone(false);
         } else {
           xMin = x;
           kgb.addCommand(new FindAKey(kgb, x, kgb.keyboardTop + kgb.keyHeight / 2, Direction.RIGHT_PIX, textReceived) {
@@ -198,7 +198,9 @@ public class AutomaticScenario {
         Log.d(TAG, "onDone " + success);
         if (success) {
           if (textReceived != null) {
-            kgb.addKey(x, y, textReceived);
+            if (textReceived.length() == 1) {
+              kgb.addKey(x, y, textReceived);
+            }
           } else if (keyReceived != -1) {
             kgb.addSpecial(x, y, keyReceived);
           }
@@ -251,7 +253,7 @@ public class AutomaticScenario {
               kgb.addCompletion(x, y);
             }
 
-            kgb.done(true);
+            kgb.onScenarioDone(true);
           }
         });
       }

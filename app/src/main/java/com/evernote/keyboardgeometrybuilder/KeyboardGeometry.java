@@ -32,7 +32,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
   private TextView logView;
   private ScrollView scrollView;
   private EditText editText;
-  private Shell.Interactive shell;
+  ShellCommandRunner shellCommandRunner;
   private Handler handler;
   private boolean suppressEvents = false;
 
@@ -47,6 +47,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
   int rowPadding;
   int numRows;
   boolean hasCompletion = false;
+  boolean running = true;
 
   public static final int EVENT_DELAY = 1000;
 
@@ -162,16 +163,40 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
   protected void onPause() {
     super.onPause();
 
-    startActivity(new Intent().setClassName(getPackageName(), this.getClass().getName()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP));
+    if (running) {
+      startActivity(new Intent().setClassName(getPackageName(), this.getClass().getName())
+          .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_EXCLUDE_STOPPED_PACKAGES));
+    }
+  }
+
+  @Override
+  public void onBackPressed() {
+    logLine("Pressed back key, stopping");
+    currentCommand = null;
+    running = false;
+
+    super.onBackPressed();
+  }
+
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    if (shellCommandRunner != null) {
+      shellCommandRunner.shutdown();
+      shellCommandRunner = null;
+    }
+
+    WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+    wm.removeViewImmediate(touchView);
   }
 
   private void buildGeometry() {
-    shell = new Shell.Builder().useSU().open(new Shell.OnCommandResultListener() {
+    shellCommandRunner = new ShellCommandRunner(new Shell.Builder().useSU().open(new Shell.OnCommandResultListener() {
       @Override
       public void onCommandResult(int i, int i1, List<String> list) {
         Log.d(TAG, i + " - " + i1 + " - " + list.toString());
       }
-    });
+    }));
 
     handler.postDelayed(new Runnable() {
       public void run() {
@@ -180,9 +205,23 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
     }, 1000);
   }
 
-  public void done(boolean success) {
+  public void onScenarioDone(boolean success) {
     logLine("Done " + success);
-    logLine(foundKeys.toString());
+    Log.i(TAG, foundKeys.values().toString());
+
+    logLine("Uploading " + foundKeys + " keys");
+    new AsyncTask<Void,Void,Void>() {
+      @Override
+      protected Void doInBackground(Void... params) {
+        GoogleSpreadsheet.uploadSession(foundKeys);
+        return null;
+      }
+
+      @Override
+      protected void onPostExecute(Void aVoid) {
+
+      }
+    }.execute((Void[]) null);
   }
 
   public synchronized void addCommand(final TouchCommand command) {
@@ -193,26 +232,17 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
     currentCommand = command;
 
     handler.removeCallbacks(eventFailed);
-    if (command instanceof TapCommand) {
-      touchView.drawTouch(((TapCommand) command).x, ((TapCommand) command).y);
+    if (currentCommand instanceof TapCommand) {
+      touchView.drawTouch(((TapCommand) currentCommand).x, ((TapCommand) currentCommand).y);
     }
 
-    handler.postDelayed(new Runnable() {
-      @Override
-      public void run() {
-        shell.waitForIdle();
-        String shellCommand = command.getShellCommand();
-        if (shellCommand != null) {
-          Log.d(TAG, "*** Executing " + shellCommand);
-          shell.addCommand(shellCommand);
-          handler.postDelayed(eventFailed, EVENT_DELAY);
-        }
-      }
-    }, 10);
+    // if a touch triggers more than one event (KeyEvent and EditorAction), let both events be handled
+    // before sending the next touch (the second one will be suppressed anyway)
+    handler.postDelayed(commandAdder, 100);
   }
 
   public void onTextReceived(String added) {
-    handler.removeCallbacks(eventFailed);
+    eventReceived();
 
     if (currentCommand != null) {
       TouchCommand oldCommand = currentCommand;
@@ -223,8 +253,13 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
     }
   }
 
-  public void onKeyReceived(int keyCode) {
+  public void eventReceived() {
     handler.removeCallbacks(eventFailed);
+    suppressEvents = true;
+  }
+
+  public void onKeyReceived(int keyCode) {
+    eventReceived();
 
     if (currentCommand != null) {
       TouchCommand oldCommand = currentCommand;
@@ -236,7 +271,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
   }
 
   private void onTextDeleted() {
-    handler.removeCallbacks(eventFailed);
+    eventReceived();
 
     if (currentCommand != null) {
       TouchCommand oldCommand = currentCommand;
@@ -264,6 +299,19 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
   Runnable scrollBottomRunnable = new Runnable() {
     public void run() {
       scrollView.fullScroll(View.FOCUS_DOWN);
+    }
+  };
+
+  Runnable commandAdder = new Runnable() {
+    public void run() {
+      try {
+        suppressEvents = false;
+        shellCommandRunner.addCommand(currentCommand.getShellCommand());
+      } catch (Exception e) {
+        Log.e(TAG, "Concurrent commands", e);
+        logLine("Please don't interfere with the test ;-)");
+      }
+      handler.postDelayed(eventFailed, EVENT_DELAY);
     }
   };
 
@@ -307,14 +355,6 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
   }
 
   @Override
-  public void onBackPressed() {
-    logLine("Pressed back key, stopping");
-    currentCommand = null;
-
-    super.onBackPressed();
-  }
-
-  @Override
   public void onSoftKeyboardStateChanged(boolean open) {
     keyboardTop = screenSize.y - keyboardStateHelper.getmLastSoftKeyboardHeightInPx();
     keyboardStateHelper.dispose();
@@ -323,9 +363,10 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
   }
 
   public void clearText() {
+    boolean wasSuppressed = suppressEvents;
     suppressEvents = true;
     editText.setText("");
-    suppressEvents = false;
+    suppressEvents = wasSuppressed;
   }
 
   public String getText() {

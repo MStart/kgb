@@ -22,6 +22,7 @@ public class TouchView extends View {
   public static final int TOUCH_RADIUS = 10;
   public static final int TOUCH_DECAY_MS = 2000;
   private Paint paint;
+  private Paint textPaint;
   private KeyboardGeometry kgb;
 
   static class Touch {
@@ -63,6 +64,9 @@ public class TouchView extends View {
   protected void onDraw(Canvas canvas) {
     if (paint == null) {
       paint = new Paint();
+      textPaint = new Paint();
+      textPaint.setTextSize(11);
+      textPaint.setTextAlign(Paint.Align.CENTER);
     }
 
     paint.setColor(Color.RED);
@@ -76,6 +80,7 @@ public class TouchView extends View {
 
     for (KeyInfo keyInfo : kgb.foundKeys.values()) {
       canvas.drawCircle(keyInfo.absoluteX, keyInfo.absoluteY, TOUCH_RADIUS, paint);
+      canvas.drawText(keyInfo.character, keyInfo.absoluteX, keyInfo.absoluteY, textPaint);
     }
 
     paint.setColor(Color.BLUE);

@@ -3,10 +3,14 @@
  */
 package com.evernote.keyboardgeometrybuilder;
 
+import android.util.Log;
+
 /**
  * Created by paour on 03/08/15.
  */
 public abstract class TapCommand implements TouchCommand {
+  public static final String TAG = "TouchCommand";
+
   int x;
   int y;
   String textReceived;
@@ -46,6 +50,8 @@ public abstract class TapCommand implements TouchCommand {
   public abstract void onDone(boolean success);
 
   public static abstract class FindAnyKey extends TapCommand {
+    public static final String TAG = "FindAnyKey";
+
     private final Direction d;
 
     public FindAnyKey(KeyboardGeometry kgb, int x, int y, Direction d) {
@@ -71,23 +77,26 @@ public abstract class TapCommand implements TouchCommand {
     }
 
     public void outOfKeyboard() {
-      kgb.done(false);
+      kgb.onScenarioDone(false);
     }
   }
 
   public static abstract class FindAKey extends FindAnyKey {
+    public static final String TAG = "FindAnyKey";
+
     private final String textExpected;
 
     public FindAKey(KeyboardGeometry kgb, int x, int y, Direction d, String textExpected) {
       super(kgb, x, y, d);
       this.textExpected = textExpected;
+      Log.d(TAG, "Looking for key '" + textExpected + "'");
     }
 
     @Override
     public void onDone(boolean success) {
       if (success) {
         if (textExpected != null) {
-          if (textExpected.equals(textReceived)) {
+          if (textExpected.equalsIgnoreCase(textReceived)) {
             foundKey();
           } else {
             wrongKey();
