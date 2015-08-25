@@ -5,10 +5,26 @@ package com.evernote.keyboardgeometrybuilder;
 
 import android.view.KeyEvent;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 /**
  * Created by paour on 03/08/15.
  */
 public class KeyInfo {
+  public JSONObject toJson() {
+    try {
+      return new JSONObject()
+          .put("absolute_x", absoluteX)
+          .put("absolute_y", absoluteY)
+          .put("key", character)
+          ;
+    } catch (JSONException e) {
+      e.printStackTrace();
+      return new JSONObject();
+    }
+  }
+
   public enum Type {
     STANDARD,
     SPECIAL,

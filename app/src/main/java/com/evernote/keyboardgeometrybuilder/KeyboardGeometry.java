@@ -204,7 +204,10 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
   }
 
   private void buildGeometry() {
-    shellCommandRunner = new ShellCommandRunner(new Shell.Builder().useSU().open(new Shell.OnCommandResultListener() {
+    addKey(1,2, "a");
+    onScenarioDone(true);
+
+    /*shellCommandRunner = new ShellCommandRunner(new Shell.Builder().useSU().open(new Shell.OnCommandResultListener() {
       @Override
       public void onCommandResult(int i, int i1, List<String> list) {
         Log.d(TAG, i + " - " + i1 + " - " + list.toString());
@@ -215,7 +218,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
       public void run() {
         new AutomaticScenario(KeyboardGeometry.this);
       }
-    }, 1000);
+    }, 1000);*/
   }
 
   public void onScenarioDone(boolean success) {
@@ -226,7 +229,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
     new AsyncTask<Void,Void,Void>() {
       @Override
       protected Void doInBackground(Void... params) {
-        GoogleSpreadsheet.uploadSession(foundKeys);
+        GoogleSpreadsheet.uploadSession(KeyboardGeometry.this, foundKeys.values());
         return null;
       }
 
