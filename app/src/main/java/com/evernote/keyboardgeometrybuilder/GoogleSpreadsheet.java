@@ -4,11 +4,14 @@
 package com.evernote.keyboardgeometrybuilder;
 
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Build;
 import android.provider.Settings;
+import android.util.DisplayMetrics;
 import android.util.Log;
 
 import com.google.gdata.client.spreadsheet.*;
@@ -75,6 +78,21 @@ public class GoogleSpreadsheet {
 
       JSONObject jsonBody = new JSONObject();
       try {
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        Point screenSize = Util.getRealScreenSize(context);
+        String keyboard = Settings.Secure.getString(context.getContentResolver(),
+            Settings.Secure.DEFAULT_INPUT_METHOD);
+        String keyboardShort = keyboard.substring(0, keyboard.indexOf('/'));
+        String keyboardVersionName = null;
+        int keyboardVersionCode = 0;
+        try {
+          PackageInfo packageInfo = context.getPackageManager().getPackageInfo(keyboardShort, 0);
+          keyboardVersionName = packageInfo.versionName;
+          keyboardVersionCode = packageInfo.versionCode;
+        } catch (PackageManager.NameNotFoundException e) {
+          e.printStackTrace();
+        }
+
         JSONObject jsonGlobal = new JSONObject()
             .put("run", UUID.randomUUID())
             .put("device", Build.MODEL)
@@ -84,12 +102,16 @@ public class GoogleSpreadsheet {
                 "Portrait" : "Landscape")
             .put("language", Locale.getDefault().getLanguage())
             .put("country", Locale.getDefault().getCountry())
-            .put("keyboard", Settings.Secure.getString(context.getContentResolver(),
-                Settings.Secure.DEFAULT_INPUT_METHOD));
+            .put("keyboard", keyboard)
+            .put("keyboard_version_name", keyboardVersionName)
+            .put("keyboard_version_code", keyboardVersionCode)
+            .put("density", displayMetrics.density)
+            .put("density_dpi", displayMetrics.densityDpi)
+            .put("density_scaled", displayMetrics.scaledDensity)
+            .put("font_scale", context.getResources().getConfiguration().fontScale)
+            .put("screen_w", screenSize.x)
+            .put("screen_h", screenSize.y);
 
-        Point screenSize = Util.getRealScreenSize(context);
-        jsonGlobal.put("screen_x", screenSize.x)
-            .put("screen_y", screenSize.y);
         jsonBody.put("global", jsonGlobal);
         JSONArray jsonKeys = new JSONArray();
         jsonBody.put("keys", jsonKeys);

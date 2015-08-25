@@ -39,8 +39,15 @@ public class KeyInfo {
   public KeyInfo(int absoluteX, int absoluteY, String character) {
     this.absoluteX = absoluteX;
     this.absoluteY = absoluteY;
-    this.character = character.toLowerCase();
-    type = Type.STANDARD;
+
+    if (character.equals("\n")) {
+      this.keyCode = KeyEvent.KEYCODE_ENTER;
+      this.character = KeyEvent.keyCodeToString(keyCode);
+      type = Type.SPECIAL;
+    } else {
+      this.character = character.toLowerCase();
+      type = Type.STANDARD;
+    }
   }
 
   public KeyInfo(String character) {
@@ -59,6 +66,7 @@ public class KeyInfo {
     this.absoluteX = absoluteX;
     this.absoluteY = absoluteY;
     type = Type.COMPLETION;
+    character = Type.COMPLETION.name();
   }
 
   @Override
