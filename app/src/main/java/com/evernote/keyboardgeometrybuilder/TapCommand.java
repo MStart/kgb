@@ -6,6 +6,8 @@ package com.evernote.keyboardgeometrybuilder;
 import android.content.res.Configuration;
 import android.util.Log;
 
+import com.evernote.espressokeyboard.KeyInfo;
+
 /**
  * Created by paour on 03/08/15.
  */

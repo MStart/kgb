@@ -20,6 +20,8 @@ import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import com.evernote.espressokeyboard.KeyInfo;
+
 import java.util.HashMap;
 import java.util.List;
 

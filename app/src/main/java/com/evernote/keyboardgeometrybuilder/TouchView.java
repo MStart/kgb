@@ -12,6 +12,8 @@ import android.os.Build;
 import android.util.AttributeSet;
 import android.view.View;
 
+import com.evernote.espressokeyboard.KeyInfo;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 

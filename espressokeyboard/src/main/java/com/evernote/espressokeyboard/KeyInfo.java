@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2015 Evernote Corporation. All rights reserved.
  */
-package com.evernote.keyboardgeometrybuilder;
+package com.evernote.espressokeyboard;
 
 import android.view.KeyEvent;
 
@@ -31,10 +31,10 @@ public class KeyInfo {
     COMPLETION
   }
 
-  int absoluteX, absoluteY;
-  String character;
-  int keyCode;
-  Type type;
+  public int absoluteX, absoluteY;
+  public String character;
+  public int keyCode;
+  public Type type;
 
   public KeyInfo(int absoluteX, int absoluteY, String character) {
     this.absoluteX = absoluteX;
