@@ -12,19 +12,6 @@ import org.json.JSONObject;
  * Created by paour on 03/08/15.
  */
 public class KeyInfo {
-  public JSONObject toJson() {
-    try {
-      return new JSONObject()
-          .put("absolute_x", absoluteX)
-          .put("absolute_y", absoluteY)
-          .put("key", character)
-          ;
-    } catch (JSONException e) {
-      e.printStackTrace();
-      return new JSONObject();
-    }
-  }
-
   public enum Type {
     STANDARD,
     SPECIAL,
@@ -35,6 +22,42 @@ public class KeyInfo {
   public String character;
   public int keyCode;
   public Type type;
+
+  public static final String ABSOLUTE_X = "absolute_x";
+  public static final String ABSOLUTE_Y = "absolute_y";
+  public static final String KEY = "key";
+
+  public KeyInfo(JSONObject jsonObject) throws JSONException {
+    absoluteX = jsonObject.getInt(ABSOLUTE_X);
+    absoluteY = jsonObject.getInt(ABSOLUTE_Y);
+    character = jsonObject.getString(KEY);
+
+    int keyCode = KeyEvent.keyCodeFromString(character);
+
+    if (character.equals(Type.COMPLETION.name())) {
+      type = Type.COMPLETION;
+    } else if (keyCode != KeyEvent.KEYCODE_UNKNOWN && !character.equals("" + keyCode)) {
+      type = Type.SPECIAL;
+    } else {
+      type = Type.STANDARD;
+      keyCode = 0;
+    }
+
+    this.keyCode = keyCode;
+  }
+
+  public JSONObject toJson() {
+    try {
+      return new JSONObject()
+          .put(ABSOLUTE_X, absoluteX)
+          .put(ABSOLUTE_Y, absoluteY)
+          .put(KEY, character)
+          ;
+    } catch (JSONException e) {
+      e.printStackTrace();
+      return new JSONObject();
+    }
+  }
 
   public KeyInfo(int absoluteX, int absoluteY, String character) {
     this.absoluteX = absoluteX;

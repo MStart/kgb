@@ -3,16 +3,20 @@
  */
 package com.evernote.espressokeyboard;
 
-import com.google.gdata.client.spreadsheet.FeedURLFactory;
-import com.google.gdata.client.spreadsheet.SpreadsheetService;
-import com.google.gdata.data.spreadsheet.ListEntry;
-import com.google.gdata.data.spreadsheet.ListFeed;
-import com.google.gdata.data.spreadsheet.WorksheetEntry;
-import com.google.gdata.data.spreadsheet.WorksheetFeed;
-import com.google.gdata.util.ServiceException;
+import android.content.Context;
+
+import com.squareup.okhttp.HttpUrl;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -21,8 +25,11 @@ import java.util.List;
 public class KeyLocations {
   static KeyLocations instance = null;
 
-  private KeyLocations() {
+  HashMap<KeyInfo,KeyInfo> keys = new HashMap<>();
+
+  private KeyLocations(Context context) {
     try {
+/*
       SpreadsheetService service =
           new SpreadsheetService("MySpreadsheetIntegration-v1");
 
@@ -30,11 +37,21 @@ public class KeyLocations {
 
       WorksheetFeed worksheetFeed = service.getFeed(worksheetFeedUrl, WorksheetFeed.class);
       List<WorksheetEntry> worksheets = worksheetFeed.getEntries();
-      WorksheetEntry worksheet = worksheets.get(0);
+      WorksheetEntry runsWorksheet = null;
+      WorksheetEntry keysWorksheet = null;
+
+      for (WorksheetEntry worksheet : worksheets) {
+        String title = worksheet.getTitle().getPlainText();
+        if ("runs".equals(title)) {
+          runsWorksheet = worksheet;
+        } else if ("keys".equals(title)) {
+          keysWorksheet = worksheet;
+        }
+      }
 
       // Fetch the list feed of the worksheet.
-      URL listFeedUrl = worksheet.getListFeedUrl();
-      ListFeed listFeed = service.getFeed(listFeedUrl, ListFeed.class);
+      URL listFeedUrl = runsWorksheet.getListFeedUrl();
+      ListFeed listFeed = service.getFeed(new Query(listFeedUrl).add, ListFeed.class);
 
       // Iterate through each row, printing its cell values.
       for (ListEntry row : listFeed.getEntries()) {
@@ -46,22 +63,54 @@ public class KeyLocations {
         }
         System.out.println();
       }
+*/
+      OkHttpClient client = new OkHttpClient();
+
+      //client.networkInterceptors().add(new StethoInterceptor());
+
+      JSONObject jsonConfig = ConfigHelper.getConfig(context);
+
+      Request request = new Request.Builder()
+          .url(HttpUrl.parse("https://script.google.com/macros/s/AKfycbyE7NEzpm6sGFhNd9j22QkI5RS6rpGeVDv6J5EHEUCl3Gy6AFU/exec")
+              .newBuilder()
+              // HttpUrl.Builder doesn't properly encode curly braces (at least from java.net.URI's point of view)
+              //.setQueryParameter("config", jsonConfig.toString())
+              .setEncodedQueryParameter("config", URLEncoder.encode(jsonConfig.toString()))
+              .build())
+          .get()
+          .build();
+      Response response = client.newCall(request).execute();
+
+      JSONObject responseJson = new JSONObject(response.body().string());
+
+      JSONArray jsonKeys = responseJson.getJSONArray("keys");
+
+      for (int i = 0; i < jsonKeys.length(); i++) {
+        KeyInfo key = new KeyInfo(jsonKeys.getJSONObject(i));
+        keys.put(key, key);
+      }
+
+      System.out.println(keys);
     } catch (IOException e) {
       e.printStackTrace();
-    } catch (ServiceException e) {
+    } catch (JSONException e) {
       e.printStackTrace();
     }
   }
 
-  public static synchronized KeyLocations instance() {
+  public static synchronized KeyLocations create(Context context) {
     if (instance == null) {
-      instance = new KeyLocations();
+      instance = new KeyLocations(context);
     }
 
     return instance;
   }
 
+  public static synchronized KeyLocations instance() {
+    return instance;
+  }
+
   public KeyInfo findKey(char key) {
-    return new KeyInfo(60, 923, "" + key);
+    return keys.get(new KeyInfo("" + key));
   }
 }

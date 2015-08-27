@@ -228,7 +228,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
     new AsyncTask<Void,Void,Void>() {
       @Override
       protected Void doInBackground(Void... params) {
-        GoogleSpreadsheet.uploadSession(KeyboardGeometry.this, foundKeys.values());
+        KeyboardGeometryUploader.uploadSession(KeyboardGeometry.this, foundKeys.values());
         return null;
       }
 

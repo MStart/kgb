@@ -20,8 +20,9 @@ android {
 
 dependencies {
   compile 'eu.chainfire:libsuperuser:1.0.0.+'
+  compile 'com.squareup.okhttp:okhttp:2.4.0'
   compile 'com.android.support.test:runner:0.3'
   compile 'com.android.support.test:rules:0.3'
   compile 'com.android.support.test.espresso:espresso-core:2.2'
-  compile ('com.google.gdata:core:1.47.1') {exclude group: 'com.google.oauth-client'; exclude group: 'javax.mail'}
+  //compile ('com.google.gdata:core:1.47.1') {exclude group: 'com.google.oauth-client'; exclude group: 'javax.mail'}
 }
