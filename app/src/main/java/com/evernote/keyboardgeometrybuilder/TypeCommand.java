@@ -45,7 +45,7 @@ public class TypeCommand implements TouchCommand {
   }
 
   @Override
-  public void setKeyReceived(int keyReceived) {
+  public void setKeyReceived(String textReceived, int keyReceived) {
     Log.d(TAG, "setKeyReceived " + keyReceived);
     onDone();
   }

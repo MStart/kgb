@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.HashMap;
 
+import eu.chainfire.libsuperuser.Shell;
+
 import static com.evernote.espressokeyboard.ConfigHelper.DENSITY;
 import static com.evernote.espressokeyboard.ConfigHelper.DEVICE;
 import static com.evernote.espressokeyboard.ConfigHelper.FONT_SCALE;
@@ -41,17 +43,30 @@ public class KeyLocations {
 
   private KeyLocations(Context context) {
     try {
+      Class.forName("eu.chainfire.libsuperuser.Shell");
+    } catch (ClassNotFoundException e) {
+      throw new IllegalStateException("libsuperuser dependency not met. Add \"testCompile " +
+          "'eu.chainfire:libsuperuser:1.0.0.+'\" to your build.gradle");
+    }
+
+    if (!Shell.SU.available()) {
+      throw new IllegalStateException("This device is not rooted or you did not grand root access, " +
+          "any tests depending on direct keyboard stimulation will not run");
+    }
+
+    try {
       OkHttpClient client = new OkHttpClient();
 
       //client.networkInterceptors().add(new StethoInterceptor());
 
       JSONObject jsonConfig = ConfigHelper.getConfig(context);
 
+      //noinspection deprecation
       Request request = new Request.Builder()
           .url(HttpUrl.parse("https://script.google.com/macros/s/AKfycbyE7NEzpm6sGFhNd9j22QkI5RS6rpGeVDv6J5EHEUCl3Gy6AFU/exec")
               .newBuilder()
-                  // HttpUrl.Builder doesn't properly encode curly braces (at least from java.net.URI's point of view)
-                  //.setQueryParameter("config", jsonConfig.toString())
+              // HttpUrl.Builder doesn't properly encode curly braces (at least from java.net.URI's point of view)
+              //.setQueryParameter("config", jsonConfig.toString())
               .setEncodedQueryParameter("config", URLEncoder.encode(jsonConfig.toString()))
               .build())
           .get()
@@ -112,6 +127,14 @@ public class KeyLocations {
     }
   }
 
+  /**
+   * Initialize the requirements for direct keyboard stimulation: downloads a key location profile
+   * for the current configuration and tests root availability. Make sure to call this method
+   * in the test class's {@code setUp()} method, since it performs network IO.
+   *
+   * @param context a Context instance
+   * @return a singleton for this class
+   */
   public static synchronized KeyLocations create(Context context) {
     if (instance == null) {
       instance = new KeyLocations(context);

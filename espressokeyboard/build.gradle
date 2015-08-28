@@ -1,4 +1,8 @@
 apply plugin: 'com.android.library'
+apply plugin: 'maven-publish'
+
+group = 'com.evernote'
+version = '0.1-SNAPSHOT'
 
 android {
   compileSdkVersion 22
@@ -10,6 +14,7 @@ android {
     versionCode 1
     versionName "1.0"
   }
+
   buildTypes {
     release {
       minifyEnabled false
@@ -24,5 +29,27 @@ dependencies {
   compile 'com.android.support.test:runner:0.3'
   compile 'com.android.support.test:rules:0.3'
   compile 'com.android.support.test.espresso:espresso-core:2.2'
-  //compile ('com.google.gdata:core:1.47.1') {exclude group: 'com.google.oauth-client'; exclude group: 'javax.mail'}
+}
+
+task initArtifactoryPomPath << {
+  artifactoryPublish {
+    mavenDescriptor = "build/${project.name}-${project.version}.pom"
+  }
+}
+
+model {
+  tasks.generatePomFileForMavenPublication {
+    destination = "build/${project.name}-${project.version}.pom"
+  }
+}
+
+publishing {
+  publications {
+    maven(MavenPublication){
+      groupId project.group
+      artifactId project.name
+      version project.version
+      artifact("${buildDir}/outputs/aar/${project.name}-release.aar")
+    }
+  }
 }

@@ -40,7 +40,8 @@ public abstract class TapCommand implements TouchCommand {
     onDone(true);
   }
 
-  public void setKeyReceived(int keyReceived) {
+  public void setKeyReceived(String textReceived, int keyReceived) {
+    this.textReceived = textReceived;
     this.keyReceived = keyReceived;
     onDone(true);
   }

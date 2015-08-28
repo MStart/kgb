@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
@@ -127,7 +128,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
 
         Log.d(TAG, "onEditorAction " + actionId + " - " + event);
 
-        onKeyReceived(KeyEvent.KEYCODE_ENTER);
+        onKeyReceived(null, KeyEvent.KEYCODE_ENTER);
 
         return false;
       }
@@ -140,7 +141,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
         Log.d(TAG, "onKey" + event);
 
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
-          onKeyReceived(event.getKeyCode());
+          onKeyReceived("" + event.getDisplayLabel(), event.getKeyCode());
         }
         return false;
       }
@@ -216,7 +217,15 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
 
     handler.postDelayed(new Runnable() {
       public void run() {
-        new AutomaticScenario(KeyboardGeometry.this);
+        Rect r = new Rect();
+        editText.getGlobalVisibleRect(r);
+        // stimulate stubborn keyboards into popping up
+        addCommand(new TapCommand(KeyboardGeometry.this, r.centerX(), r.centerY()) {
+          @Override
+          public void onDone(boolean success) {
+            new AutomaticScenario(KeyboardGeometry.this);
+          }
+        });
       }
     }, 1000);
   }
@@ -272,13 +281,13 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
     }
   }
 
-  public void onKeyReceived(int keyCode) {
+  public void onKeyReceived(String textReceived, int keyCode) {
     eventReceived();
 
     if (currentCommand != null) {
       TouchCommand oldCommand = currentCommand;
       currentCommand = null;
-      oldCommand.setKeyReceived(keyCode);
+      oldCommand.setKeyReceived(textReceived, keyCode);
     } else {
       Log.w(TAG, "onKeyReceived no currentCommand");
     }
@@ -290,7 +299,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
     if (currentCommand != null) {
       TouchCommand oldCommand = currentCommand;
       currentCommand = null;
-      oldCommand.setKeyReceived(KeyEvent.KEYCODE_BACK);
+      oldCommand.setKeyReceived(null, KeyEvent.KEYCODE_BACK);
     } else {
       Log.w(TAG, "onTextDeleted no currentCommand");
     }

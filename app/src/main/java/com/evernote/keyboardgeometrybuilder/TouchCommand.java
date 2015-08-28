@@ -9,6 +9,6 @@ package com.evernote.keyboardgeometrybuilder;
 public interface TouchCommand {
   String getShellCommand();
   void setTextReceived(String textReceived);
-  void setKeyReceived(int keyReceived);
+  void setKeyReceived(String textReceived, int keyReceived);
   void onNothingReceived();
 }

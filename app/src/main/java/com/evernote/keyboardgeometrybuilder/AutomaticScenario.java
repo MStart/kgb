@@ -88,12 +88,15 @@ public class AutomaticScenario {
 
       @Override
       public void onDone(boolean success) {
-        Log.d(TAG, "onDone '" + textReceived + "'");
+        Log.d(TAG, "onDone '" + textReceived + "' - " + keyReceived);
 
         if (!success) {
           adjustTopRow(lastTextReceived, y);
         } else {
-          if (textReceived.length() == 1) {
+          if (textReceived == null) {
+            Log.w(TAG, "onDone we shouldn't be getting events without text at this point");
+            again();
+          } else if (textReceived.length() == 1) {
             lastTextReceived = textReceived;
             if (kgb.addKey(x, y, textReceived)) {
               kgb.numRows++;
@@ -201,12 +204,12 @@ public class AutomaticScenario {
       public void onDone(boolean success) {
         Log.d(TAG, "onDone " + success);
         if (success) {
-          if (textReceived != null) {
-            if (textReceived.length() == 1) {
-              kgb.addKey(x, y, textReceived);
-            }
-          } else if (keyReceived != -1) {
+          if (keyReceived != -1) {
             kgb.addSpecial(x, y, keyReceived);
+          }
+
+          if (textReceived != null && textReceived.length() == 1) {
+            kgb.addKey(x, y, textReceived);
           }
 
           again();
