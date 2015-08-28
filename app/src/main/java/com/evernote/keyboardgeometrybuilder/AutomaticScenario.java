@@ -218,7 +218,11 @@ public class AutomaticScenario {
               Log.d(TAG, "accept " + s);
               if ("A".equals(s)) {
                 kgb.addSpecial(x, y, KeyEvent.KEYCODE_SHIFT_LEFT);
+              } else if (s.length() == 1) {
+                kgb.addSpecial(x, y, KeyEvent.KEYCODE_ALT_LEFT);
               }
+
+              kgb.clearText();
 
               again();
             }

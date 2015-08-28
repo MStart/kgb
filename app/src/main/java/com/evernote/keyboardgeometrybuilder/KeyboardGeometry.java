@@ -21,6 +21,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.evernote.espressokeyboard.KeyInfo;
+import com.evernote.espressokeyboard.NavBarUtil;
 
 import java.util.HashMap;
 import java.util.List;
@@ -75,8 +76,8 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
     logView = (TextView) findViewById(R.id.log);
     editText = (EditText) findViewById(R.id.input);
 
-    navBarSize = Util.getNavigationBarSize(this);
-    screenSize = Util.getRealScreenSize(this);
+    navBarSize = NavBarUtil.getNavigationBarSize(this);
+    screenSize = NavBarUtil.getRealScreenSize(this);
 
     orientation = getResources().getConfiguration().orientation;
     if (orientation == Configuration.ORIENTATION_PORTRAIT) {
@@ -221,22 +222,25 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
   }
 
   public void onScenarioDone(boolean success) {
-    logLine("Done " + success);
+    logLine("onScenarioDone " + success);
     Log.i(TAG, foundKeys.values().toString());
 
-    logLine("Uploading " + foundKeys.size() + " keys");
-    new AsyncTask<Void,Void,Void>() {
-      @Override
-      protected Void doInBackground(Void... params) {
-        KeyboardGeometryUploader.uploadSession(KeyboardGeometry.this, foundKeys.values());
-        return null;
-      }
+    if (success) {
+      logLine("Uploading " + foundKeys.size() + " keys");
+      new AsyncTask<Void, Void, Void>() {
+        @Override
+        protected Void doInBackground(Void... params) {
+          KeyboardGeometryUploader.uploadSession(KeyboardGeometry.this, foundKeys.values());
+          return null;
+        }
 
-      @Override
-      protected void onPostExecute(Void aVoid) {
-        logLine("Upload complete");
-      }
-    }.execute((Void[]) null);
+        @Override
+        protected void onPostExecute(Void aVoid) {
+          logLine("Upload complete");
+          logTitle("You can quit now");
+        }
+      }.execute((Void[]) null);
+    }
   }
 
   public synchronized void addCommand(final TouchCommand command) {

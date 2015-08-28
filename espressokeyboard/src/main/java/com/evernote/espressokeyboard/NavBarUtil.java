@@ -1,4 +1,6 @@
-package com.evernote.keyboardgeometrybuilder; /**
+package com.evernote.espressokeyboard;
+
+/**
  * Copyright (c) 2015 Evernote Corporation. All rights reserved.
  */
 
@@ -11,7 +13,7 @@ import android.view.WindowManager;
 /**
  * Created by paour on 03/08/15.
  */
-public class Util {
+public class NavBarUtil {
   public static Point getNavigationBarSize(Context context) {
     Point appUsableSize = getAppUsableScreenSize(context);
     Point realScreenSize = getRealScreenSize(context);

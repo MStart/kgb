@@ -4,6 +4,7 @@
 package com.evernote.espressokeyboard;
 
 import android.content.Context;
+import android.graphics.Point;
 
 import com.squareup.okhttp.HttpUrl;
 import com.squareup.okhttp.OkHttpClient;
@@ -17,7 +18,18 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.HashMap;
-import java.util.List;
+
+import static com.evernote.espressokeyboard.ConfigHelper.DENSITY;
+import static com.evernote.espressokeyboard.ConfigHelper.DEVICE;
+import static com.evernote.espressokeyboard.ConfigHelper.FONT_SCALE;
+import static com.evernote.espressokeyboard.ConfigHelper.KEYBOARD;
+import static com.evernote.espressokeyboard.ConfigHelper.LANGUAGE;
+import static com.evernote.espressokeyboard.ConfigHelper.NAVBAR_H;
+import static com.evernote.espressokeyboard.ConfigHelper.NAVBAR_W;
+import static com.evernote.espressokeyboard.ConfigHelper.ORIENTATION;
+import static com.evernote.espressokeyboard.ConfigHelper.ORIENTATION_PORTRAIT;
+import static com.evernote.espressokeyboard.ConfigHelper.SCREEN_H;
+import static com.evernote.espressokeyboard.ConfigHelper.SCREEN_W;
 
 /**
  * Created by paour on 26/08/15.
@@ -29,41 +41,6 @@ public class KeyLocations {
 
   private KeyLocations(Context context) {
     try {
-/*
-      SpreadsheetService service =
-          new SpreadsheetService("MySpreadsheetIntegration-v1");
-
-      URL worksheetFeedUrl = FeedURLFactory.getDefault().getWorksheetFeedUrl("15sKldjTZ0YbtfihlSKzEgikCJL6hMNtKuWIIpudvPBQ", "public", "full");
-
-      WorksheetFeed worksheetFeed = service.getFeed(worksheetFeedUrl, WorksheetFeed.class);
-      List<WorksheetEntry> worksheets = worksheetFeed.getEntries();
-      WorksheetEntry runsWorksheet = null;
-      WorksheetEntry keysWorksheet = null;
-
-      for (WorksheetEntry worksheet : worksheets) {
-        String title = worksheet.getTitle().getPlainText();
-        if ("runs".equals(title)) {
-          runsWorksheet = worksheet;
-        } else if ("keys".equals(title)) {
-          keysWorksheet = worksheet;
-        }
-      }
-
-      // Fetch the list feed of the worksheet.
-      URL listFeedUrl = runsWorksheet.getListFeedUrl();
-      ListFeed listFeed = service.getFeed(new Query(listFeedUrl).add, ListFeed.class);
-
-      // Iterate through each row, printing its cell values.
-      for (ListEntry row : listFeed.getEntries()) {
-        // Print the first column's cell value
-        System.out.print(row.getTitle().getPlainText() + "\t");
-        // Iterate over the remaining columns, and print each cell value
-        for (String tag : row.getCustomElements().getTags()) {
-          System.out.print(tag + "=" + row.getCustomElements().getValue(tag) + "\t");
-        }
-        System.out.println();
-      }
-*/
       OkHttpClient client = new OkHttpClient();
 
       //client.networkInterceptors().add(new StethoInterceptor());
@@ -73,8 +50,8 @@ public class KeyLocations {
       Request request = new Request.Builder()
           .url(HttpUrl.parse("https://script.google.com/macros/s/AKfycbyE7NEzpm6sGFhNd9j22QkI5RS6rpGeVDv6J5EHEUCl3Gy6AFU/exec")
               .newBuilder()
-              // HttpUrl.Builder doesn't properly encode curly braces (at least from java.net.URI's point of view)
-              //.setQueryParameter("config", jsonConfig.toString())
+                  // HttpUrl.Builder doesn't properly encode curly braces (at least from java.net.URI's point of view)
+                  //.setQueryParameter("config", jsonConfig.toString())
               .setEncodedQueryParameter("config", URLEncoder.encode(jsonConfig.toString()))
               .build())
           .get()
@@ -84,17 +61,54 @@ public class KeyLocations {
       JSONObject responseJson = new JSONObject(response.body().string());
 
       JSONArray jsonKeys = responseJson.getJSONArray("keys");
+      JSONObject jsonMatchedConfig = responseJson.getJSONObject("run");
+
+      if (!Objects.equals(jsonConfig.optString(KEYBOARD), jsonMatchedConfig.optString(KEYBOARD))) {
+        throw new IllegalStateException("The current keyboard hasn't been uploaded to the database: current " + jsonConfig + " - matched " + jsonMatchedConfig);
+      }
+
+      if (!Objects.equals(jsonConfig.optString(LANGUAGE), jsonMatchedConfig.optString(LANGUAGE))) {
+        throw new IllegalStateException("The current language hasn't been uploaded to the database: current " + jsonConfig + " - matched " + jsonMatchedConfig);
+      }
+
+      if (!Objects.equals(jsonConfig.optString(ORIENTATION), jsonMatchedConfig.optString(ORIENTATION))) {
+        throw new IllegalStateException("The current orientation hasn't been uploaded to the database: current " + jsonConfig + " - matched " + jsonMatchedConfig);
+      }
+
+      // need to project key locations?
+      Point currentNavBarSize = new Point(jsonConfig.getInt(NAVBAR_W), jsonConfig.getInt(NAVBAR_H));
+      Point matchedNavBarSize = new Point(jsonMatchedConfig.getInt(NAVBAR_W), jsonMatchedConfig.getInt(NAVBAR_H));
+      Point translate;
+      float scaleX = 1, scaleY = 1;
+      if (Objects.equals(jsonConfig.optString(DEVICE), jsonMatchedConfig.optString(DEVICE))
+          && Objects.equals(jsonConfig.optString(DENSITY), jsonMatchedConfig.optString(DENSITY))
+          && Objects.equals(currentNavBarSize, matchedNavBarSize)
+          && Objects.equals(jsonConfig.optString(FONT_SCALE), jsonMatchedConfig.optString(FONT_SCALE))) {
+        translate = null;
+      } else {
+        Point currentSize = new Point(jsonConfig.getInt(SCREEN_W), jsonConfig.getInt(SCREEN_H));
+        Point matchedSize = new Point(jsonMatchedConfig.getInt(SCREEN_W), jsonMatchedConfig.getInt(SCREEN_H));
+
+        scaleX = currentSize.x / matchedSize.x;
+        scaleY = currentSize.y / matchedSize.y;
+        if (ORIENTATION_PORTRAIT.equals(jsonConfig.optString(ORIENTATION))) {
+          translate = new Point(0, matchedNavBarSize.y - currentNavBarSize.y);
+        } else {
+          translate = new Point(matchedNavBarSize.x - currentNavBarSize.x, 0);
+        }
+      }
 
       for (int i = 0; i < jsonKeys.length(); i++) {
-        KeyInfo key = new KeyInfo(jsonKeys.getJSONObject(i));
+        KeyInfo key = new KeyInfo(jsonKeys.getJSONObject(i), translate, scaleX, scaleY);
         keys.put(key, key);
       }
 
       System.out.println(keys);
     } catch (IOException e) {
       e.printStackTrace();
+      throw new IllegalStateException("Network issue", e);
     } catch (JSONException e) {
-      e.printStackTrace();
+      throw new IllegalStateException("Content issue", e);
     }
   }
 

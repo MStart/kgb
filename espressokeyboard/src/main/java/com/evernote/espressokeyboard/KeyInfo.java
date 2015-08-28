@@ -3,6 +3,7 @@
  */
 package com.evernote.espressokeyboard;
 
+import android.graphics.Point;
 import android.view.KeyEvent;
 
 import org.json.JSONException;
@@ -27,9 +28,15 @@ public class KeyInfo {
   public static final String ABSOLUTE_Y = "absolute_y";
   public static final String KEY = "key";
 
-  public KeyInfo(JSONObject jsonObject) throws JSONException {
+  public KeyInfo(JSONObject jsonObject, Point translate, float scaleX, float scaleY) throws JSONException {
     absoluteX = jsonObject.getInt(ABSOLUTE_X);
     absoluteY = jsonObject.getInt(ABSOLUTE_Y);
+
+    if (translate != null) {
+      absoluteX = (int) (absoluteX * scaleX + translate.x);
+      absoluteY = (int) (absoluteY * scaleY + translate.y);
+    }
+
     character = jsonObject.getString(KEY);
 
     int keyCode = KeyEvent.keyCodeFromString(character);

@@ -23,9 +23,24 @@ import java.util.Locale;
  * Created by paour on 27/08/15.
  */
 public class ConfigHelper {
+  public static final String DEVICE = "device";
+  public static final String KEYBOARD = "keyboard";
+  public static final String DENSITY = "density";
+  public static final String SCREEN_W = "screen_w";
+  public static final String SCREEN_H = "screen_h";
+  public static final String FONT_SCALE = "font_scale";
+  public static final String LANGUAGE = "language";
+  public static final String COUNTRY = "country";
+  public static final String ORIENTATION = "orientation";
+  public static final String ORIENTATION_PORTRAIT = "Portrait";
+  public static final String ORIENTATION_LANDSCAPE = "Landscape";
+  public static final String NAVBAR_W = "navbar_w";
+  public static final String NAVBAR_H = "navbar_h";
+
   public static JSONObject getConfig(Context context) throws JSONException {
     DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
-    Point screenSize = getRealScreenSize(context);
+    Point screenSize = NavBarUtil.getRealScreenSize(context);
+    Point navigationBarSize = NavBarUtil.getNavigationBarSize(context);
     String keyboard = Settings.Secure.getString(context.getContentResolver(),
         Settings.Secure.DEFAULT_INPUT_METHOD);
     String keyboardShort = keyboard.substring(0, keyboard.indexOf('/'));
@@ -40,39 +55,25 @@ public class ConfigHelper {
     }
 
     return new JSONObject()
-        .put("device", Build.MODEL)
+        .put(DEVICE, Build.MODEL)
         .put("manufacturer", Build.BRAND)
         .put("android_version", Build.VERSION.RELEASE)
-        .put("orientation", context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT ?
-            "Portrait" : "Landscape")
-        .put("language", Locale.getDefault().getLanguage())
-        .put("country", Locale.getDefault().getCountry())
-        .put("keyboard", keyboard)
+        .put(ORIENTATION, context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT ?
+            ORIENTATION_PORTRAIT : ORIENTATION_LANDSCAPE)
+        .put(LANGUAGE, Locale.getDefault().getLanguage())
+        .put(COUNTRY, Locale.getDefault().getCountry())
+        .put(KEYBOARD, keyboard)
         .put("keyboard_version_name", keyboardVersionName)
         .put("keyboard_version_code", keyboardVersionCode)
-        .put("density", displayMetrics.density)
+        .put(DENSITY, displayMetrics.density)
         .put("density_dpi", displayMetrics.densityDpi)
         .put("density_scaled", displayMetrics.scaledDensity)
-        .put("font_scale", context.getResources().getConfiguration().fontScale)
-        .put("screen_w", screenSize.x)
-        .put("screen_h", screenSize.y)
-        .put("kgb_version", BuildConfig.VERSION_CODE);
-  }
-
-  public static Point getRealScreenSize(Context context) {
-    WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-    Display display = windowManager.getDefaultDisplay();
-    Point size = new Point();
-
-    if (Build.VERSION.SDK_INT >= 17) {
-      display.getRealSize(size);
-    } else if (Build.VERSION.SDK_INT >= 14) {
-      try {
-        size.x = (Integer) Display.class.getMethod("getRawWidth").invoke(display);
-        size.y = (Integer) Display.class.getMethod("getRawHeight").invoke(display);
-      } catch (Exception ignored) {}
-    }
-
-    return size;
+        .put(FONT_SCALE, context.getResources().getConfiguration().fontScale)
+        .put(SCREEN_W, screenSize.x)
+        .put(SCREEN_H, screenSize.y)
+        .put("kgb_version", BuildConfig.VERSION_CODE)
+        .put(NAVBAR_W, navigationBarSize.x)
+        .put(NAVBAR_H, navigationBarSize.y)
+        ;
   }
 }
