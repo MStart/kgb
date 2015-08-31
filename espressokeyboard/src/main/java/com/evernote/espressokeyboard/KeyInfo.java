@@ -92,6 +92,10 @@ public class KeyInfo {
     type = Type.SPECIAL;
   }
 
+  public KeyInfo(int keyCode) {
+    this(0, 0, keyCode);
+  }
+
   public KeyInfo(int absoluteX, int absoluteY) {
     this.absoluteX = absoluteX;
     this.absoluteY = absoluteY;

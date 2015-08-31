@@ -118,7 +118,7 @@ public class KeyLocations {
         keys.put(key, key);
       }
 
-      System.out.println(keys);
+      System.out.println("KeyLocations: " + keys);
     } catch (IOException e) {
       e.printStackTrace();
       throw new IllegalStateException("Network issue", e);
@@ -148,6 +148,20 @@ public class KeyLocations {
   }
 
   public KeyInfo findKey(char key) {
-    return keys.get(new KeyInfo("" + key));
+    return findKey(new KeyInfo("" + key));
+  }
+
+  public KeyInfo findKey(int keyCode) {
+    return findKey(new KeyInfo(keyCode));
+  }
+
+  private KeyInfo findKey(KeyInfo keyInfo) {
+    KeyInfo result = keys.get(keyInfo);
+
+    if (result == null) {
+      throw new IllegalStateException("Could not find " + keyInfo.description());
+    }
+
+    return result;
   }
 }

@@ -138,7 +138,7 @@ function handleGet(config) {
   
   // build result
   var keysResult = [];
-  var keyInfos = keys.getRange(firstRow + 2, 2, lastRow - firstRow, keys.getLastColumn() - 1).getValues();
+  var keyInfos = keys.getRange(firstRow, 2, lastRow - firstRow, keys.getLastColumn() - 1).getValues();
   for (var rowN = 0; rowN < keyInfos.length; rowN++) {
     var row = keyInfos[rowN];
     var keyInfo = {};
