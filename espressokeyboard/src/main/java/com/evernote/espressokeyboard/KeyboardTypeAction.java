@@ -54,13 +54,14 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
     for (char c : stringToBeTyped.toCharArray()) {
       if (c == '\n') {
         keysToBeHit.add(KeyLocations.instance().findKey(KeyEvent.KEYCODE_ENTER));
-      }
-      if (Character.isUpperCase(c)) {
-        keysToBeHit.add(KeyLocations.instance().findKey(KeyEvent.KEYCODE_SHIFT_LEFT));
-        c = Character.toLowerCase(c);
-      }
+      } else {
+        if (Character.isUpperCase(c)) {
+          keysToBeHit.add(KeyLocations.instance().findKey(KeyEvent.KEYCODE_SHIFT_LEFT));
+          c = Character.toLowerCase(c);
+        }
 
-      keysToBeHit.add(KeyLocations.instance().findKey(c));
+        keysToBeHit.add(KeyLocations.instance().findKey(c));
+      }
     }
   }
 
@@ -100,7 +101,7 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
       interactive = builder.open(null);
 
       // todo: use IdlingResource
-      uiController.loopMainThreadForAtLeast(keysToBeHit.size() * 200);
+      uiController.loopMainThreadForAtLeast(keysToBeHit.size() * 500);
     }
   }
 

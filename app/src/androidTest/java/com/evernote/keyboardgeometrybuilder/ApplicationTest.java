@@ -18,10 +18,16 @@ public class ApplicationTest extends ActivityInstrumentationTestCase2<TestKeyboa
     super(TestKeyboard.class);
   }
 
-  public void testTypeA() throws Exception {
+  public void testTypeHello() throws Exception {
     onView(withId(R.id.input))
-        .perform(new KeyboardTypeAction("a"))
-        .check(matches(withText("a")));
+        .perform(new KeyboardTypeAction("Hello"))
+        .check(matches(withText("Hello")));
+  }
+
+  public void testTypeTwoLines() throws Exception {
+    onView(withId(R.id.input))
+        .perform(new KeyboardTypeAction("Hello\nHi."))
+        .check(matches(withText("Hello\nHi.")));
   }
 
   @Override
