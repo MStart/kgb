@@ -38,6 +38,10 @@ public class Key {
     return new Key(KeyEvent.keyCodeToString(keyCode), keyCode, Type.SPECIAL);
   }
 
+  public static Key getCompletion() {
+    return new Key(Type.COMPLETION.name(), 0, Type.COMPLETION);
+  }
+
   public String getCharacter() {
     return character;
   }

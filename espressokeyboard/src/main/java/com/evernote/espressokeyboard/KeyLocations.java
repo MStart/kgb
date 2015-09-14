@@ -39,7 +39,7 @@ import static com.evernote.espressokeyboard.ConfigHelper.SCREEN_W;
 public class KeyLocations {
   static KeyLocations instance = null;
 
-  HashMap<Key,KeyInfo> keys = new HashMap<>();
+  HashMap<Key, KeyInfo> keys = new HashMap<>();
 
   private KeyLocations(Context context) {
     try {
@@ -65,8 +65,8 @@ public class KeyLocations {
       Request request = new Request.Builder()
           .url(HttpUrl.parse("https://script.google.com/macros/s/AKfycbyE7NEzpm6sGFhNd9j22QkI5RS6rpGeVDv6J5EHEUCl3Gy6AFU/exec")
               .newBuilder()
-              // HttpUrl.Builder doesn't properly encode curly braces (at least from java.net.URI's point of view)
-              //.setQueryParameter("config", jsonConfig.toString())
+                  // HttpUrl.Builder doesn't properly encode curly braces (at least from java.net.URI's point of view)
+                  //.setQueryParameter("config", jsonConfig.toString())
               .setEncodedQueryParameter("config", URLEncoder.encode(jsonConfig.toString()))
               .build())
           .get()
@@ -147,15 +147,32 @@ public class KeyLocations {
     return instance;
   }
 
+  /**
+   * use findStandard for keys, findSpecial for specials, or findCompletion
+   **/
+  @Deprecated
+  public KeyInfo findKey(char key) {
+    return findStandard(key);
+  }
+
+  @Deprecated
+  public KeyInfo findKey(int keyCode) {
+    return findSpecial(keyCode);
+  }
+
   public KeyInfo findStandard(char key) {
-    return findSpecial(Key.getCharacter("" + key));
+    return findKey(Key.getCharacter("" + key));
   }
 
   public KeyInfo findSpecial(int keyCode) {
-    return findSpecial(Key.getSpecial(keyCode));
+    return findKey(Key.getSpecial(keyCode));
   }
 
-  private KeyInfo findSpecial(Key key) {
+  public KeyInfo findCompletion() {
+    return findKey(Key.getCompletion());
+  }
+
+  private KeyInfo findKey(Key key) {
     KeyInfo result = keys.get(key);
 
     if (result == null) {

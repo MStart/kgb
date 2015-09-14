@@ -81,7 +81,7 @@ public class KeyInfo {
   public static KeyInfo getCompletionAt(int absoluteX, int absoluteY) {
     return new KeyInfo(
         new KeyLocation(absoluteX, absoluteY),
-        new Key(Type.COMPLETION.name(), 0, Type.COMPLETION));
+        Key.getCompletion());
   }
 
   public KeyLocation getLocation() {
