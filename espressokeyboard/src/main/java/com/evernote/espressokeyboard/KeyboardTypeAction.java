@@ -53,14 +53,14 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
     keysToBeHit = new ArrayList<>();
     for (char c : stringToBeTyped.toCharArray()) {
       if (c == '\n') {
-        keysToBeHit.add(KeyLocations.instance().findKey(KeyEvent.KEYCODE_ENTER));
+        keysToBeHit.add(KeyLocations.instance().findSpecial(KeyEvent.KEYCODE_ENTER));
       } else {
         if (Character.isUpperCase(c)) {
-          keysToBeHit.add(KeyLocations.instance().findKey(KeyEvent.KEYCODE_SHIFT_LEFT));
+          keysToBeHit.add(KeyLocations.instance().findSpecial(KeyEvent.KEYCODE_SHIFT_LEFT));
           c = Character.toLowerCase(c);
         }
 
-        keysToBeHit.add(KeyLocations.instance().findKey(c));
+        keysToBeHit.add(KeyLocations.instance().findStandard(c));
       }
     }
   }
@@ -95,7 +95,7 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
       Shell.Builder builder = new Shell.Builder().useSU();
 
       for (KeyInfo keyInfo : keysToBeHit) {
-        builder.addCommand("input tap " + keyInfo.absoluteX + " " + keyInfo.absoluteY);
+        builder.addCommand("input tap " + keyInfo.getLocation().getAbsoluteX() + " " + keyInfo.getLocation().getAbsoluteY());
       }
 
       interactive = builder.open(null);

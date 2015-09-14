@@ -32,7 +32,7 @@ public abstract class TapCommand implements TouchCommand {
   }
 
   public TapCommand(KeyboardGeometry kgb, KeyInfo existingKey) {
-    this(kgb, existingKey.absoluteX, existingKey.absoluteY);
+    this(kgb, existingKey.getLocation().getAbsoluteX(), existingKey.getLocation().getAbsoluteY());
   }
 
   public void setTextReceived(String textReceived) {

@@ -39,7 +39,7 @@ import static com.evernote.espressokeyboard.ConfigHelper.SCREEN_W;
 public class KeyLocations {
   static KeyLocations instance = null;
 
-  HashMap<KeyInfo,KeyInfo> keys = new HashMap<>();
+  HashMap<Key,KeyInfo> keys = new HashMap<>();
 
   private KeyLocations(Context context) {
     try {
@@ -99,7 +99,7 @@ public class KeyLocations {
           && Objects.equals(jsonConfig.optString(DENSITY), jsonMatchedConfig.optString(DENSITY))
           && Objects.equals(currentNavBarSize, matchedNavBarSize)
           && Objects.equals(jsonConfig.optString(FONT_SCALE), jsonMatchedConfig.optString(FONT_SCALE))) {
-        translate = null;
+        translate = new Point(0, 0);
       } else {
         Point currentSize = new Point(jsonConfig.getInt(SCREEN_W), jsonConfig.getInt(SCREEN_H));
         Point matchedSize = new Point(jsonMatchedConfig.getInt(SCREEN_W), jsonMatchedConfig.getInt(SCREEN_H));
@@ -114,8 +114,8 @@ public class KeyLocations {
       }
 
       for (int i = 0; i < jsonKeys.length(); i++) {
-        KeyInfo key = new KeyInfo(jsonKeys.getJSONObject(i), translate, scaleX, scaleY);
-        keys.put(key, key);
+        KeyInfo keyInfo = new KeyInfo(jsonKeys.getJSONObject(i), translate, scaleX, scaleY);
+        keys.put(keyInfo.getKey(), keyInfo);
       }
 
       System.out.println("KeyLocations: " + keys);
@@ -147,19 +147,19 @@ public class KeyLocations {
     return instance;
   }
 
-  public KeyInfo findKey(char key) {
-    return findKey(new KeyInfo("" + key));
+  public KeyInfo findStandard(char key) {
+    return findSpecial(Key.getCharacter("" + key));
   }
 
-  public KeyInfo findKey(int keyCode) {
-    return findKey(new KeyInfo(keyCode));
+  public KeyInfo findSpecial(int keyCode) {
+    return findSpecial(Key.getSpecial(keyCode));
   }
 
-  private KeyInfo findKey(KeyInfo keyInfo) {
-    KeyInfo result = keys.get(keyInfo);
+  private KeyInfo findSpecial(Key key) {
+    KeyInfo result = keys.get(key);
 
     if (result == null) {
-      throw new IllegalStateException("Could not find " + keyInfo.description());
+      throw new IllegalStateException("Could not find " + key.description());
     }
 
     return result;

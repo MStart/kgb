@@ -5,6 +5,7 @@ package com.evernote.keyboardgeometrybuilder;
 
 import android.util.Log;
 
+import com.evernote.espressokeyboard.Key;
 import com.evernote.espressokeyboard.KeyInfo;
 
 /**
@@ -28,10 +29,10 @@ public class TypeCommand implements TouchCommand {
 
   @Override
   public String getShellCommand() {
-    KeyInfo existingKey = kgb.foundKeys.get(new KeyInfo(Character.toString(text.charAt(index++))));
+    KeyInfo existingKey = kgb.foundKeys.get(Key.getCharacter(Character.toString(text.charAt(index++))));
 
     if (existingKey != null) {
-      return "input tap " + existingKey.absoluteX + " " + existingKey.absoluteY;
+      return "input tap " + existingKey.getLocation().getAbsoluteX() + " " + existingKey.getLocation().getAbsoluteY();
     } else {
       return null;
     }
