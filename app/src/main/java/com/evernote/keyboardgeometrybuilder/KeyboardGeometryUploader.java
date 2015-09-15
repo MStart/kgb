@@ -32,42 +32,40 @@ public class KeyboardGeometryUploader {
 
   public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
-  public static void uploadSession(Context context, Collection<KeyInfo> foundKeys) {
+  public static boolean uploadSession(Context context, Collection<KeyInfo> foundKeys) throws IOException {
+    OkHttpClient client = new OkHttpClient();
+
+    JSONObject jsonBody = new JSONObject();
     try {
-      OkHttpClient client = new OkHttpClient();
+      JSONObject jsonRun = ConfigHelper.getConfig(context);
 
-      JSONObject jsonBody = new JSONObject();
-      try {
-        JSONObject jsonRun = ConfigHelper.getConfig(context);
+      UUID runId = UUID.randomUUID();
+      DateFormat dateFormat = DateFormat.getDateTimeInstance();
+      dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+      jsonRun.put("run", runId)
+          .put("timestamp", dateFormat.format(new Date()));
 
-        UUID runId = UUID.randomUUID();
-        DateFormat dateFormat = DateFormat.getDateTimeInstance();
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        jsonRun.put("run", runId)
-            .put("timestamp", dateFormat.format(new Date()));
+      jsonBody.put("run", jsonRun);
+      JSONArray jsonKeys = new JSONArray();
+      jsonBody.put("keys", jsonKeys);
 
-        jsonBody.put("run", jsonRun);
-        JSONArray jsonKeys = new JSONArray();
-        jsonBody.put("keys", jsonKeys);
-
-        for (KeyInfo foundKey : foundKeys) {
-          jsonKeys.put(foundKey.toJson().put("run", runId));
-        }
-      } catch (JSONException e1) {
-        e1.printStackTrace();
+      for (KeyInfo foundKey : foundKeys) {
+        jsonKeys.put(foundKey.toJson().put("run", runId));
       }
-
-      System.out.println(jsonBody.toString());
-
-      RequestBody body = RequestBody.create(JSON, jsonBody.toString());
-      Request request = new Request.Builder()
-          .url("https://script.google.com/macros/s/AKfycbyE7NEzpm6sGFhNd9j22QkI5RS6rpGeVDv6J5EHEUCl3Gy6AFU/exec")
-          .post(body)
-          .build();
-      Response response = client.newCall(request).execute();
-      System.out.println(response.body().string());
-    } catch (IOException e) {
-      e.printStackTrace();
+    } catch (JSONException e1) {
+      e1.printStackTrace();
     }
+
+    System.out.println(jsonBody.toString());
+
+    RequestBody body = RequestBody.create(JSON, jsonBody.toString());
+    Request request = new Request.Builder()
+        .url("https://script.google.com/macros/s/AKfycbyE7NEzpm6sGFhNd9j22QkI5RS6rpGeVDv6J5EHEUCl3Gy6AFU/exec")
+        .post(body)
+        .build();
+    Response response = client.newCall(request).execute();
+    System.out.println(response.body().string());
+
+    return true;
   }
 }

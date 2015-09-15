@@ -15,15 +15,19 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import com.evernote.espressokeyboard.Key;
 import com.evernote.espressokeyboard.KeyInfo;
 import com.evernote.espressokeyboard.NavBarUtil;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
@@ -57,7 +61,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
 
   public static final int EVENT_DELAY = 1000;
 
-  HashMap<KeyInfo,KeyInfo> foundKeys = new HashMap<>();
+  HashMap<Key,KeyInfo> foundKeys = new HashMap<>();
   private SoftKeyboardStateHelper keyboardStateHelper;
   private TouchView touchView;
   boolean running = true;
@@ -188,11 +192,17 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
 
   @Override
   public void onBackPressed() {
-    logLine("Pressed back key, stopping");
-    currentCommand = null;
-    running = false;
+    stopScenario();
+  }
 
-    super.onBackPressed();
+  public void stopScenario() {
+    if (running) {
+      logTitle("Stopping run, press again to exit");
+      currentCommand = null;
+      running = false;
+    } else {
+      super.onBackPressed();
+    }
   }
 
   @Override
@@ -205,6 +215,24 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
 
     WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
     wm.removeViewImmediate(touchView);
+  }
+
+  @Override
+  public boolean onCreateOptionsMenu(Menu menu) {
+    getMenuInflater().inflate(R.menu.main, menu);
+    return true;
+  }
+
+  @Override
+  public boolean onOptionsItemSelected(MenuItem item) {
+    switch (item.getItemId()) {
+      case R.id.cancel_action:
+        stopScenario();
+        return true;
+
+      default:
+        return super.onOptionsItemSelected(item);
+    }
   }
 
   private void buildGeometry() {
@@ -232,27 +260,43 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
 
   public void onScenarioDone(boolean success) {
     logLine("onScenarioDone " + success);
+    running = false;
     Log.i(TAG, foundKeys.values().toString());
 
     if (success) {
       logLine("Uploading " + foundKeys.size() + " keys");
-      new AsyncTask<Void, Void, Void>() {
+      new AsyncTask<Void, Void, Exception>() {
         @Override
-        protected Void doInBackground(Void... params) {
-          KeyboardGeometryUploader.uploadSession(KeyboardGeometry.this, foundKeys.values());
-          return null;
+        protected Exception doInBackground(Void... params) {
+          try {
+            KeyboardGeometryUploader.uploadSession(KeyboardGeometry.this, foundKeys.values());
+            return null;
+          } catch (Exception e) {
+            Log.e(TAG, "Upload failed", e);
+            return e;
+          }
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-          logLine("Upload complete");
-          logTitle("You can quit now");
+        protected void onPostExecute(Exception e) {
+          if (e == null) {
+            logLine("Upload complete");
+            logTitle("You can quit now");
+          } else {
+            logTitle("The upload failed");
+            logLine(e.toString());
+            logLine("Make sure you have an internet connection and run the scenario again");
+          }
         }
       }.execute((Void[]) null);
     }
   }
 
   public synchronized void addCommand(final TouchCommand command) {
+    if (!running) {
+      return;
+    }
+
     if (currentCommand != null) {
       throw new IllegalStateException("Trying to run two commands");
     }
@@ -345,28 +389,27 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
   };
 
   public boolean addKey(int x, int y, String character) {
-    return addKeyInfo(new KeyInfo(x, y, character));
+    return addKeyInfo(KeyInfo.getCharacterAt(x, y, character));
   }
 
   public boolean addSpecial(int x, int y, int keyCode) {
-    return addKeyInfo(new KeyInfo(x, y, keyCode));
+    return addKeyInfo(KeyInfo.getSpecialAt(x, y, keyCode));
   }
 
   public boolean addCompletion(int x, int y) {
-    return addKeyInfo(new KeyInfo(x, y));
+    return addKeyInfo(KeyInfo.getCompletionAt(x, y));
   }
 
   public boolean addKeyInfo(KeyInfo newKey) {
-    KeyInfo existingKey = foundKeys.get(newKey);
+    KeyInfo existingKey = foundKeys.get(newKey.getKey());
 
     if (existingKey == null) {
-      foundKeys.put(newKey, newKey);
-      logLine("Found " + newKey.description());
+      foundKeys.put(newKey.getKey(), newKey);
+      logLine("Found " + newKey.getKey().description());
       return true;
     } else {
-      existingKey.absoluteX = (existingKey.absoluteX + newKey.absoluteX) / 2;
-      existingKey.absoluteY = (existingKey.absoluteY + newKey.absoluteY) / 2;
-      Log.d(TAG, "Moving " + existingKey.description());
+      existingKey.averageLocationWith(newKey);
+      Log.d(TAG, "Moving " + existingKey.getKey().description());
       return false;
     }
   }

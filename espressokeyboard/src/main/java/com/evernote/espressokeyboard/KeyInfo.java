@@ -4,7 +4,10 @@
 package com.evernote.espressokeyboard;
 
 import android.graphics.Point;
+import android.support.annotation.NonNull;
 import android.view.KeyEvent;
+
+import com.evernote.espressokeyboard.Key.Type;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -13,33 +16,25 @@ import org.json.JSONObject;
  * Created by paour on 03/08/15.
  */
 public class KeyInfo {
-  public enum Type {
-    STANDARD,
-    SPECIAL,
-    COMPLETION
-  }
-
-  public int absoluteX, absoluteY;
-  public String character;
-  public int keyCode;
-  public Type type;
+  private KeyLocation location;
+  private Key key;
 
   public static final String ABSOLUTE_X = "absolute_x";
   public static final String ABSOLUTE_Y = "absolute_y";
   public static final String KEY = "key";
 
-  public KeyInfo(JSONObject jsonObject, Point translate, float scaleX, float scaleY) throws JSONException {
-    absoluteX = jsonObject.getInt(ABSOLUTE_X);
-    absoluteY = jsonObject.getInt(ABSOLUTE_Y);
+  public KeyInfo(@NonNull JSONObject jsonObject, @NonNull Point translate, float scaleX, float scaleY) throws JSONException {
+    int absoluteX = jsonObject.getInt(ABSOLUTE_X);
+    int absoluteY = jsonObject.getInt(ABSOLUTE_Y);
 
-    if (translate != null) {
-      absoluteX = (int) (absoluteX * scaleX + translate.x);
-      absoluteY = (int) (absoluteY * scaleY + translate.y);
-    }
+    absoluteX = (int) (absoluteX * scaleX + translate.x);
+    absoluteY = (int) (absoluteY * scaleY + translate.y);
 
-    character = jsonObject.getString(KEY);
+    location = new KeyLocation(absoluteX, absoluteY);
 
+    String character = jsonObject.getString(KEY);
     int keyCode = KeyEvent.keyCodeFromString(character);
+    Type type;
 
     if (character.equals(Type.COMPLETION.name())) {
       type = Type.COMPLETION;
@@ -47,18 +42,18 @@ public class KeyInfo {
       type = Type.SPECIAL;
     } else {
       type = Type.STANDARD;
-      keyCode = 0;
+      keyCode = KeyEvent.KEYCODE_UNKNOWN;
     }
 
-    this.keyCode = keyCode;
+    this.key = new Key(character, keyCode, type);
   }
 
   public JSONObject toJson() {
     try {
       return new JSONObject()
-          .put(ABSOLUTE_X, absoluteX)
-          .put(ABSOLUTE_Y, absoluteY)
-          .put(KEY, character)
+          .put(ABSOLUTE_X, location.getAbsoluteX())
+          .put(ABSOLUTE_Y, location.getAbsoluteY())
+          .put(KEY, key.getCharacter())
           ;
     } catch (JSONException e) {
       e.printStackTrace();
@@ -66,85 +61,49 @@ public class KeyInfo {
     }
   }
 
-  public KeyInfo(int absoluteX, int absoluteY, String character) {
-    this.absoluteX = absoluteX;
-    this.absoluteY = absoluteY;
-
-    if (character.equals("\n")) {
-      this.keyCode = KeyEvent.KEYCODE_ENTER;
-      this.character = KeyEvent.keyCodeToString(keyCode);
-      type = Type.SPECIAL;
-    } else {
-      this.character = character.toLowerCase();
-      type = Type.STANDARD;
-    }
+  private KeyInfo(KeyLocation location, Key key) {
+    this.location = location;
+    this.key = key;
   }
 
-  public KeyInfo(String character) {
-    this(0, 0, character);
+  public static KeyInfo getCharacterAt(int absoluteX, int absoluteY, String character) {
+    return new KeyInfo(
+        new KeyLocation(absoluteX, absoluteY),
+        Key.getCharacter(character));
   }
 
-  public KeyInfo(int absoluteX, int absoluteY, int keyCode) {
-    this.absoluteX = absoluteX;
-    this.absoluteY = absoluteY;
-    this.keyCode = keyCode;
-    character = KeyEvent.keyCodeToString(keyCode);
-    type = Type.SPECIAL;
+  public static KeyInfo getSpecialAt(int absoluteX, int absoluteY, int keyCode) {
+    return new KeyInfo(
+        new KeyLocation(absoluteX, absoluteY),
+        Key.getSpecial(keyCode));
   }
 
-  public KeyInfo(int keyCode) {
-    this(0, 0, keyCode);
+  public static KeyInfo getCompletionAt(int absoluteX, int absoluteY) {
+    return new KeyInfo(
+        new KeyLocation(absoluteX, absoluteY),
+        Key.getCompletion());
   }
 
-  public KeyInfo(int absoluteX, int absoluteY) {
-    this.absoluteX = absoluteX;
-    this.absoluteY = absoluteY;
-    type = Type.COMPLETION;
-    character = Type.COMPLETION.name();
+  public KeyLocation getLocation() {
+    return location;
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-
-    KeyInfo keyInfo = (KeyInfo) o;
-
-    return keyCode == keyInfo.keyCode
-        && !(character != null ? !character.equals(keyInfo.character) : keyInfo.character != null)
-        && type == keyInfo.type;
+  public Key getKey() {
+    return key;
   }
 
-  @Override
-  public int hashCode() {
-    int result = (character != null ? character.hashCode() : 0);
-    result = 31 * result + keyCode;
-    result = 31 * result + type.hashCode();
-    return result;
+  public void averageLocationWith(KeyInfo other) {
+    location = KeyLocation.average(location, other.location);
   }
 
   @Override
   public String toString() {
     return "KeyInfo{" +
-        "absoluteX=" + absoluteX +
-        ", absoluteY=" + absoluteY +
-        ", character='" + character + '\'' +
-        ", keyCode=" + keyCode +
-        ", type=" + type +
+        "absoluteX=" + location.getAbsoluteX() +
+        ", absoluteY=" + location.getAbsoluteY() +
+        ", character='" + key.getCharacter() + '\'' +
+        ", keyCode=" + key.getKeyCode() +
+        ", type=" + key.getType() +
         '}';
-  }
-
-  public String description() {
-    switch (type) {
-      case STANDARD:
-      case SPECIAL:
-        return "key '" + character + "'";
-
-      case COMPLETION:
-        return "completion slot";
-
-      default:
-        return "Unknown";
-    }
   }
 }

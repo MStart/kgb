@@ -5,6 +5,8 @@ package com.evernote.keyboardgeometrybuilder;
 
 import android.util.Log;
 
+import java.util.concurrent.ArrayBlockingQueue;
+
 import eu.chainfire.libsuperuser.Shell;
 
 /**
@@ -13,8 +15,7 @@ import eu.chainfire.libsuperuser.Shell;
 public class ShellCommandRunner extends Thread {
   public static final String TAG = "ShellCommandRunner";
   private final Shell.Interactive shell;
-  private String shellCommand;
-  private boolean running = true;
+  ArrayBlockingQueue<String> queue = new ArrayBlockingQueue<>(1);
 
   public ShellCommandRunner(Shell.Interactive shell) {
     super(TAG);
@@ -24,46 +25,26 @@ public class ShellCommandRunner extends Thread {
 
   @Override
   public void run() {
-    while (running) {
-      if (shellCommand == null) {
-        synchronized (shell) {
-          try {
-            shell.wait();
-          } catch (InterruptedException e) {
-            Log.e(TAG, "", e);
-          }
-        }
-      } else {
-        String tmpCommand;
+    while(true) {
+      try {
+        String tmpCommand = queue.take();
 
-        synchronized (shell) {
-          tmpCommand = shellCommand;
-          shellCommand = null;
-        }
+        if (tmpCommand.length() == 0) break;
 
         shell.waitForIdle();
         Log.d(TAG, "*** Executing " + tmpCommand);
         shell.addCommand(tmpCommand);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
       }
     }
   }
 
   public void addCommand(String shellCommand) {
-    synchronized (shell) {
-      if (this.shellCommand != null) {
-        throw new IllegalStateException("Trying to run two commands");
-      }
-
-      this.shellCommand = shellCommand;
-
-      shell.notifyAll();
-    }
+    queue.add(shellCommand);
   }
 
   public void shutdown() {
-    running = false;
-    synchronized (shell) {
-      shell.notifyAll();
-    }
+    queue.add("");
   }
 }

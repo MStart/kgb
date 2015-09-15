@@ -81,8 +81,8 @@ public class TouchView extends View {
     }
 
     for (KeyInfo keyInfo : kgb.foundKeys.values()) {
-      canvas.drawCircle(keyInfo.absoluteX, keyInfo.absoluteY, TOUCH_RADIUS, paint);
-      canvas.drawText(keyInfo.character, keyInfo.absoluteX, keyInfo.absoluteY, textPaint);
+      canvas.drawCircle(keyInfo.getLocation().getAbsoluteX(), keyInfo.getLocation().getAbsoluteY(), TOUCH_RADIUS, paint);
+      canvas.drawText(keyInfo.getKey().getCharacter(), keyInfo.getLocation().getAbsoluteX(), keyInfo.getLocation().getAbsoluteY(), textPaint);
     }
 
     paint.setColor(Color.BLUE);
