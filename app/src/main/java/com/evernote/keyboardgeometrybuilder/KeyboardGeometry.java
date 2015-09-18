@@ -7,6 +7,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
@@ -25,11 +26,13 @@ import android.widget.TextView;
 
 import com.evernote.espressokeyboard.Key;
 import com.evernote.espressokeyboard.KeyInfo;
+import com.evernote.espressokeyboard.KeyboardSwitcher;
 import com.evernote.espressokeyboard.NavBarUtil;
 
-import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 import eu.chainfire.libsuperuser.Shell;
 
@@ -37,6 +40,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
   public static final String TAG = "kgb";
 
   public static final int PIXEL_PITCH = 8;
+  public static final boolean SHORT_SCENARIO = false;
 
   private TextView logView;
   private ScrollView scrollView;
@@ -65,6 +69,9 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
   private SoftKeyboardStateHelper keyboardStateHelper;
   private TouchView touchView;
   boolean running = true;
+
+  public static Set<String> keyboards = null;
+  public String currentKeyboard;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -122,7 +129,6 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
 
       @Override
       public void afterTextChanged(Editable s) {
-
       }
     });
     editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -178,6 +184,25 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
     params.gravity = Gravity.FILL_HORIZONTAL | Gravity.FILL_VERTICAL;
     WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
     wm.addView(touchView, params);
+
+    currentKeyboard = Settings.Secure.getString(getContentResolver(),
+        Settings.Secure.DEFAULT_INPUT_METHOD);
+
+    if (keyboards == null) {
+      if (KeyboardSwitcher.enabled()) {
+        keyboards = KeyboardSwitcher.getIdLabelMap(this).keySet();
+        Log.i(TAG, "Keyboards " + keyboards);
+        logLine("Preparing to test " + keyboards.size() + " keyboards: " + keyboards.toString());
+      } else {
+        keyboards = Collections.emptySet();
+        logTitle("KeyboardSwitcher accessibility service not enabled");
+        logLine("Only testing the current keyboard");
+      }
+    }
+
+    keyboards.remove(currentKeyboard);
+
+    logLine("Testing keyboard " + currentKeyboard + " (" + keyboards.size() + " remaining)");
   }
 
   @Override
@@ -251,7 +276,13 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
         addCommand(new TapCommand(KeyboardGeometry.this, r.centerX(), r.centerY()) {
           @Override
           public void onDone(boolean success) {
-            new AutomaticScenario(KeyboardGeometry.this);
+            //noinspection PointlessBooleanExpression
+            if (!SHORT_SCENARIO) {
+              new AutomaticScenario(KeyboardGeometry.this);
+            } else {
+              addKey(10, 10, "a");
+              onScenarioDone(true);
+            }
           }
         });
       }
@@ -266,22 +297,41 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
     if (success) {
       logLine("Uploading " + foundKeys.size() + " keys");
       new AsyncTask<Void, Void, Exception>() {
+        int retries = 3;
+
         @Override
-        protected Exception doInBackground(Void... params) {
+        protected Exception doInBackground(Void... nothing) {
           try {
             KeyboardGeometryUploader.uploadSession(KeyboardGeometry.this, foundKeys.values());
             return null;
           } catch (Exception e) {
             Log.e(TAG, "Upload failed", e);
-            return e;
+
+            if (retries-- >= 0) {
+              try {
+                Thread.sleep(5000);
+              } catch (InterruptedException ignored) {
+              }
+
+              Log.d(TAG, "Retrying", e);
+              publishProgress((Void[]) null);
+              return doInBackground(nothing);
+            } else {
+              return e;
+            }
           }
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... nothing) {
+          logLine("Retrying upload");
         }
 
         @Override
         protected void onPostExecute(Exception e) {
           if (e == null) {
             logLine("Upload complete");
-            logTitle("You can quit now");
+              nextKeyboard();
           } else {
             logTitle("The upload failed");
             logLine(e.toString());
@@ -289,6 +339,28 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
           }
         }
       }.execute((Void[]) null);
+    } else {
+      logLine("Skipping result upload");
+      nextKeyboard();
+    }
+  }
+
+  private void nextKeyboard() {
+    if (keyboards == null || keyboards.size() == 0) {
+      keyboards = null;
+      logTitle("You can quit now");
+    } else {
+      logTitle("Switching to next keyboard");
+      //KeyboardSwitcher.updateIme(this, keyboards.iterator().next(), KeyboardGeometry.class);
+      KeyboardSwitcher.launchInputMethodPicker(this, keyboards.iterator().next(), new Runnable() {
+        @Override
+        public void run() {
+          if (!isFinishing()) {
+            finish();
+            startActivity(new Intent(KeyboardGeometry.this, KeyboardGeometry.class));
+          }
+        }
+      });
     }
   }
 
@@ -379,7 +451,11 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
       try {
         suppressEvents = false;
         Log.d(TAG, "Enabling events");
-        shellCommandRunner.addCommand(currentCommand.getShellCommand());
+        if (currentCommand != null) {
+          shellCommandRunner.addCommand(currentCommand.getShellCommand());
+        } else {
+          Log.w(TAG, "commandAdder no currentCommand");
+        }
       } catch (Exception e) {
         Log.e(TAG, "Concurrent commands", e);
         logLine("Please don't interfere with the test ;-)");

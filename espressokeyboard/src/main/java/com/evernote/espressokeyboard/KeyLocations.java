@@ -5,6 +5,7 @@ package com.evernote.espressokeyboard;
 
 import android.content.Context;
 import android.graphics.Point;
+import android.util.Log;
 
 import com.squareup.okhttp.HttpUrl;
 import com.squareup.okhttp.OkHttpClient;
@@ -37,6 +38,7 @@ import static com.evernote.espressokeyboard.ConfigHelper.SCREEN_W;
  * Created by paour on 26/08/15.
  */
 public class KeyLocations {
+  public static final String TAG = "KeyLocations";
   static KeyLocations instance = null;
 
   HashMap<Key, KeyInfo> keys = new HashMap<>();
@@ -78,6 +80,8 @@ public class KeyLocations {
       JSONArray jsonKeys = responseJson.getJSONArray("keys");
       JSONObject jsonMatchedConfig = responseJson.getJSONObject("run");
 
+      Log.d(TAG, "Matched config: " + jsonMatchedConfig);
+
       if (!Objects.equals(jsonConfig.optString(KEYBOARD), jsonMatchedConfig.optString(KEYBOARD))) {
         throw new IllegalStateException("The current keyboard hasn't been uploaded to the database: current " + jsonConfig + " - matched " + jsonMatchedConfig);
       }
@@ -111,6 +115,8 @@ public class KeyLocations {
         } else {
           translate = new Point(matchedNavBarSize.x - currentNavBarSize.x, 0);
         }
+
+        Log.d(TAG, "Reprojecting: translation " + translate + " - scale " + scaleX + "," + scaleY);
       }
 
       for (int i = 0; i < jsonKeys.length(); i++) {
@@ -118,7 +124,7 @@ public class KeyLocations {
         keys.put(keyInfo.getKey(), keyInfo);
       }
 
-      System.out.println("KeyLocations: " + keys);
+      Log.d(TAG, "KeyLocations: " + keys);
     } catch (IOException e) {
       e.printStackTrace();
       throw new IllegalStateException("Network issue", e);

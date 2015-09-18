@@ -32,7 +32,7 @@ public class KeyboardGeometryUploader {
 
   public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
-  public static boolean uploadSession(Context context, Collection<KeyInfo> foundKeys) throws IOException {
+  public static void uploadSession(Context context, Collection<KeyInfo> foundKeys) throws IOException {
     OkHttpClient client = new OkHttpClient();
 
     JSONObject jsonBody = new JSONObject();
@@ -65,7 +65,5 @@ public class KeyboardGeometryUploader {
         .build();
     Response response = client.newCall(request).execute();
     System.out.println(response.body().string());
-
-    return true;
   }
 }

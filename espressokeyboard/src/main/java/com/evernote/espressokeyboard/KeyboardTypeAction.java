@@ -35,20 +35,31 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
   private final boolean tapToFocus;
   private Shell.Interactive interactive;
   List<KeyInfo> keysToBeHit;
-  String description;
+  StringBuilder description = new StringBuilder();
 
   public KeyboardTypeAction(String stringToBeTyped) {
-    this(stringToBeTyped, true);
+    this(true, stringToBeTyped);
   }
 
   public KeyboardTypeAction(KeyInfo... keysToBeHit) {
     this(true, keysToBeHit);
   }
 
-  public KeyboardTypeAction(String stringToBeTyped, boolean tapToFocus) {
-    Preconditions.checkNotNull(stringToBeTyped);
-    this.description = stringToBeTyped;
+  public KeyboardTypeAction(boolean tapToFocus, String stringToBeTyped) {
     this.tapToFocus = tapToFocus;
+
+    add(stringToBeTyped);
+  }
+
+  public KeyboardTypeAction(boolean tapToFocus, KeyInfo... keysToBeHit) {
+    this.tapToFocus = tapToFocus;
+
+    add(keysToBeHit);
+  }
+
+  public KeyboardTypeAction add(String stringToBeTyped) {
+    Preconditions.checkNotNull(stringToBeTyped);
+    appendDescription(stringToBeTyped);
 
     keysToBeHit = new ArrayList<>();
     for (char c : stringToBeTyped.toCharArray()) {
@@ -63,17 +74,40 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
         keysToBeHit.add(KeyLocations.instance().findStandard(c));
       }
     }
+
+    return this;
   }
 
-  public KeyboardTypeAction(boolean tapToFocus, KeyInfo... keysToBeHit) {
-    this.tapToFocus = tapToFocus;
-    this.description = String.format("%d keys", keysToBeHit.length);
+  public KeyboardTypeAction add(KeyInfo... keysToBeHit) {
+    appendDescription(String.format("%d keys", keysToBeHit.length));
     this.keysToBeHit = Arrays.asList(keysToBeHit);
+
+    return this;
+  }
+
+  public KeyboardTypeAction addReturn() {
+    return add(KeyLocations.instance().findSpecial(KeyEvent.KEYCODE_ENTER));
+  }
+
+  public KeyboardTypeAction addBackspace() {
+    return add(KeyLocations.instance().findSpecial(KeyEvent.KEYCODE_BACK));
+  }
+
+  public KeyboardTypeAction addCompletion() {
+    return add(KeyLocations.instance().findCompletion());
+  }
+
+  private void appendDescription(String s) {
+    if (description.length() != 0) {
+      description.append(", ");
+    }
+
+    description.append(s);
   }
 
   public Matcher<View> getConstraints() {
     Matcher matchers = Matchers.allOf(ViewMatchers.isDisplayed());
-    if(!this.tapToFocus) {
+    if (!this.tapToFocus) {
       matchers = Matchers.allOf(matchers, ViewMatchers.hasFocus());
     }
 
@@ -87,7 +121,7 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
     if (keysToBeHit.size() == 0) {
       Log.w(TAG, "Supplied string is empty resulting in no-op (nothing is typed).");
     } else {
-      if(this.tapToFocus) {
+      if (this.tapToFocus) {
         (new GeneralClickAction(Tap.SINGLE, GeneralLocation.CENTER, Press.FINGER)).perform(uiController, view);
         uiController.loopMainThreadUntilIdle();
       }
@@ -106,7 +140,7 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
   }
 
   public String getDescription() {
-    return String.format("really type text(%s)", this.description);
+    return String.format("really type text(%s)", this.description.toString());
   }
 
   @Override
