@@ -32,7 +32,6 @@ import com.evernote.espressokeyboard.NavBarUtil;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
 import eu.chainfire.libsuperuser.Shell;
 
@@ -70,7 +69,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
   private TouchView touchView;
   boolean running = true;
 
-  public static Set<String> keyboards = null;
+  public static List<String> keyboards = null;
   public String currentKeyboard;
 
   @Override
@@ -189,12 +188,12 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
         Settings.Secure.DEFAULT_INPUT_METHOD);
 
     if (keyboards == null) {
-      if (KeyboardSwitcher.enabled()) {
-        keyboards = KeyboardSwitcher.getIdLabelMap(this).keySet();
+      if (KeyboardSwitcher.isAccessibilityServiceEnabled()) {
+        keyboards = KeyboardSwitcher.getKeyboards(this);
         Log.i(TAG, "Keyboards " + keyboards);
         logLine("Preparing to test " + keyboards.size() + " keyboards: " + keyboards.toString());
       } else {
-        keyboards = Collections.emptySet();
+        keyboards = Collections.emptyList();
         logTitle("KeyboardSwitcher accessibility service not enabled");
         logLine("Only testing the current keyboard");
       }
@@ -351,7 +350,6 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
       logTitle("You can quit now");
     } else {
       logTitle("Switching to next keyboard");
-      //KeyboardSwitcher.updateIme(this, keyboards.iterator().next(), KeyboardGeometry.class);
       KeyboardSwitcher.launchInputMethodPicker(this, keyboards.iterator().next(), new Runnable() {
         @Override
         public void run() {

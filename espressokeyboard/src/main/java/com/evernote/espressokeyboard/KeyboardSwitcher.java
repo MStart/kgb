@@ -15,12 +15,14 @@ import android.accessibilityservice.AccessibilityService;
 import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +45,7 @@ public class KeyboardSwitcher extends AccessibilityService {
   private static long sIMPLaunchTime;
   private static String sNextKeyboard = null;
   private static Runnable sIMESwitchListener;
+  public static boolean sIsEnabled = false;
 
   private final static Map<String, InputMethodInfo> sImiCache = new HashMap<>();
 
@@ -122,141 +125,6 @@ public class KeyboardSwitcher extends AccessibilityService {
     imm.showInputMethodPicker();
   }
 
-  /*public static boolean updateIme(Activity activity, String newKeyboardId, Class<? extends Activity> newActivity) {
-    try {
-      String currId = Settings.Secure.getString(activity.getContentResolver(),
-          Settings.Secure.DEFAULT_INPUT_METHOD);
-      if (!newKeyboardId.equals(currId)) {
-        Intent activityIntent = new Intent(activity,
-            newActivity);
-        activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        activityIntent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-        activityIntent.addFlags(Intent.FLAG_ACTIVITY_NO_USER_ACTION);
-
-        activity.finish();
-        activity.startActivity(activityIntent);
-
-        final InputMethodManager imm = (InputMethodManager) activity
-            .getSystemService(Context.INPUT_METHOD_SERVICE);
-
-        // stop the current ime
-        stopIme(activity, currId);
-
-        imm.setInputMethod(null, newKeyboardId);
-
-        // Send a notification broadcast for the change in IMEs
-        Intent updateImeIntent = new Intent(Intent.ACTION_INPUT_METHOD_CHANGED);
-        updateImeIntent.putExtra("input_method_id", newKeyboardId);
-      }
-    } catch (Exception e) {
-      Log.e(TAG,
-          "Error occurred while switching keyboards to ".concat(newKeyboardId),
-          e);
-      return false;
-    }
-
-    return true;
-  }
-
-  public static void stopIme(Context caller, String imeId) {
-    List<String> pidList = retrieveImePid(caller, imeId);
-    if (pidList == null) {
-      Log.e(TAG, "Error occurred while trying to retrieve pids for ime id: "
-          .concat(imeId));
-      return;
-    }
-
-    int numPids = pidList.size();
-    String[] killCommands = new String[numPids];
-    for (int i = 0; i < numPids; i++)
-      killCommands[i] = "kill -".concat(KillSignal.TERM.name()).concat(" ")
-          .concat(pidList.get(i));
-
-    Shell.SU.run(killCommands);
-  }
-
-  public static List<String> retrieveImePid(Context caller, String imeId) {
-    Map<String, InputMethodInfo> imeIdInfo = getIdLabelMap(caller);
-    if (!imeIdInfo.containsKey(imeId))
-      return null;
-
-    InputMethodInfo currIme = imeIdInfo.get(imeId);
-    if (currIme == null)
-      return null;
-
-    // Get the current ime process name.
-    String currImeProcessName = currIme.getServiceInfo().processName;
-    return retrieveProcessPids(currImeProcessName);
-  }
-
-  public static int getPsPidIndex() {
-    String command = "ps -h";
-    List<String> output = Shell.SH.run(command);
-    if (output == null) {
-      Log.e(TAG, "Unable to run command ".concat(command));
-      return DEFAULT_PS_PID_INDEX;
-    }
-
-    int numParts;
-    for (String line : output) {
-      String[] lineParts = line.split("\\s+");
-      numParts = lineParts.length;
-
-      for (int i = 0; i < numParts; i++) {
-        if (lineParts[i].equals(PID_COL))
-          return i;
-      }
-    }
-
-    return DEFAULT_PS_PID_INDEX;
-  }
-
-  public static List<String> retrieveProcessPids(String processName) {
-    String command = "ps|grep ".concat(processName);
-    List<String> output = Shell.SH.run(command);
-    if (output == null) {
-      Log.e(TAG, "Unable to run command ".concat(command));
-      return Collections.emptyList();
-    }
-
-    int pidColIndex = getPsPidIndex();
-
-    List<String> pidList = new ArrayList<String>(output.size());
-    for (String line : output) {
-      String[] lineParts = line.split("\\s+");
-      if (lineParts.length < 2)
-        continue;
-
-      pidList.add(lineParts[pidColIndex]);
-    }
-
-    return pidList;
-  }
-
-  public static Pair<CharSequence[], CharSequence[]> getKeyboardsInfo(Context context) {
-    // Retrieve list of input method
-    InputMethodManager imeManager = (InputMethodManager) context
-        .getSystemService(Context.INPUT_METHOD_SERVICE);
-    List<InputMethodInfo> imes = imeManager.getEnabledInputMethodList();
-    int imesSize = imes.size();
-
-    // Store input method labels for display in view menu
-    CharSequence[] keyboardLabels = new CharSequence[imesSize + 1];
-    CharSequence[] keyboardIds = new CharSequence[imesSize + 1];
-
-    keyboardLabels[0] = DEFAULT_KEYBOARD_LABEL;
-    keyboardIds[0] = DEFAULT_KEYBOARD_ID;
-
-    PackageManager pm = context.getPackageManager();
-    for (int i = 1; i < imesSize + 1; i++) {
-      InputMethodInfo imi = imes.get(i - 1);
-      keyboardLabels[i] = imi.loadLabel(pm);
-      keyboardIds[i] = imi.getId();
-    }
-
-    return new Pair<CharSequence[], CharSequence[]>(keyboardLabels, keyboardIds);
-  }*/
-
   private void flushImiCache() {
     sImiCache.clear();
   }
@@ -283,44 +151,22 @@ public class KeyboardSwitcher extends AccessibilityService {
     return cachedValue;
   }
 
-  /*public static boolean isAccessibilityEnabled(Context context) {
-    return isAccessibilityEnabled(context, "com.evernote.keyboardgeometrybuilder/com.evernote.espressokeyboard.KeyboardSwitcher");
-  }
-
-  public static boolean isAccessibilityEnabled(Context context, String id) {
-    AccessibilityManager am = (AccessibilityManager) context
-        .getSystemService(Context.ACCESSIBILITY_SERVICE);
-
-    List<AccessibilityServiceInfo> runningServices = am
-        .getInstalledAccessibilityServiceList();
-    for (AccessibilityServiceInfo service : runningServices) {
-      Log.i(TAG, service.getId());
-      if (id.equals(service.getId())) {
-        return true;
-      }
-    }
-
-    return false;
-  }*/
-
-  public static Map<String, InputMethodInfo> getIdLabelMap(Context context) {
+  public static List<String> getKeyboards(Context context) {
     InputMethodManager imeManager = (InputMethodManager) context
         .getSystemService(Context.INPUT_METHOD_SERVICE);
     if (imeManager == null) {
-      return Collections.emptyMap();
+      return Collections.emptyList();
     }
 
     List<InputMethodInfo> imesInfo = imeManager.getEnabledInputMethodList();
-    HashMap<String, InputMethodInfo> idLabelMap = new HashMap<>(imesInfo.size());
+    List<String> keyboards = new ArrayList<>(imesInfo.size());
 
     for (InputMethodInfo imi : imesInfo) {
-      idLabelMap.put(imi.getId(), imi);
+      keyboards.add(imi.getId());
     }
 
-    return idLabelMap;
+    return keyboards;
   }
-
-  public static boolean sIsEnabled = false;
 
   @Override
   public void onServiceConnected() {
@@ -334,7 +180,32 @@ public class KeyboardSwitcher extends AccessibilityService {
     sIsEnabled = false;
   }
 
-  public static boolean enabled() {
+  public static boolean isAccessibilityServiceEnabled() {
     return sIsEnabled;
+  }
+
+  public static boolean nextKeyboard(Context context) {
+    return nextKeyboard(context, null);
+  }
+
+  public static boolean nextKeyboard(Context context, Runnable listener) {
+    String currentKeyboard = Settings.Secure.getString(context.getContentResolver(),
+        Settings.Secure.DEFAULT_INPUT_METHOD);
+
+    List<String> keyboards = getKeyboards(context);
+
+    for (int i = 0; i < keyboards.size(); i++) {
+      String keyboard = keyboards.get(i);
+      if (keyboard.equals(currentKeyboard)) {
+        if (i + 1 < keyboards.size()) {
+          launchInputMethodPicker(context, keyboards.get(i + 1), listener);
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
+
+    return false;
   }
 }
