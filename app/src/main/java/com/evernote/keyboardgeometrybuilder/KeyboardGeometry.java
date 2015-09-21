@@ -188,7 +188,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
         Settings.Secure.DEFAULT_INPUT_METHOD);
 
     if (keyboards == null) {
-      if (KeyboardSwitcher.isAccessibilityServiceEnabled()) {
+      if (KeyboardSwitcher.isAccessibilityServiceEnabled(this)) {
         keyboards = KeyboardSwitcher.getKeyboards(this);
         Log.i(TAG, "Keyboards " + keyboards);
         logLine("Preparing to test " + keyboards.size() + " keyboards: " + keyboards.toString());
@@ -313,7 +313,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
               }
 
               Log.d(TAG, "Retrying", e);
-              publishProgress((Void[]) null);
+              publishProgress();
               return doInBackground(nothing);
             } else {
               return e;

@@ -3,6 +3,8 @@
  */
 package com.evernote.espressokeyboard;
 
+import android.app.Instrumentation;
+import android.app.UiAutomation;
 import android.os.Build;
 import android.support.test.espresso.IdlingResource;
 import android.support.test.espresso.UiController;
@@ -32,10 +34,21 @@ import eu.chainfire.libsuperuser.Shell;
  */
 public class KeyboardTypeAction implements ViewAction, IdlingResource {
   private static final String TAG = KeyboardTypeAction.class.getSimpleName();
-  private final boolean tapToFocus;
+  private boolean tapToFocus;
+  private UiAutomation uiAutomation = null;
   private Shell.Interactive interactive;
-  List<KeyInfo> keysToBeHit;
+  List<KeyInfo> keysToBeHit = new ArrayList<>();
   StringBuilder description = new StringBuilder();
+
+  public KeyboardTypeAction(UiAutomation uiAutomation) {
+    this.uiAutomation = uiAutomation;
+  }
+
+  public KeyboardTypeAction(Instrumentation instrumentation) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+      this.uiAutomation = instrumentation.getUiAutomation();
+    }
+  }
 
   public KeyboardTypeAction(String stringToBeTyped) {
     this(true, stringToBeTyped);
@@ -61,7 +74,6 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
     Preconditions.checkNotNull(stringToBeTyped);
     appendDescription(stringToBeTyped);
 
-    keysToBeHit = new ArrayList<>();
     for (char c : stringToBeTyped.toCharArray()) {
       if (c == '\n') {
         keysToBeHit.add(KeyLocations.instance().findSpecial(KeyEvent.KEYCODE_ENTER));
@@ -80,7 +92,7 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
 
   public KeyboardTypeAction add(KeyInfo... keysToBeHit) {
     appendDescription(String.format("%d keys", keysToBeHit.length));
-    this.keysToBeHit = Arrays.asList(keysToBeHit);
+    this.keysToBeHit.addAll(Arrays.asList(keysToBeHit));
 
     return this;
   }
@@ -126,16 +138,25 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
         uiController.loopMainThreadUntilIdle();
       }
 
-      Shell.Builder builder = new Shell.Builder().useSU();
+      if (uiAutomation == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2) {
+        Shell.Builder builder = new Shell.Builder().useSU();
 
-      for (KeyInfo keyInfo : keysToBeHit) {
-        builder.addCommand("input tap " + keyInfo.getLocation().getAbsoluteX() + " " + keyInfo.getLocation().getAbsoluteY());
+        for (KeyInfo keyInfo : keysToBeHit) {
+          builder.addCommand("input tap " + keyInfo.getLocation().getAbsoluteX() + " " + keyInfo.getLocation().getAbsoluteY());
+        }
+
+        interactive = builder.open(null);
+
+        // todo: use IdlingResource
+        uiController.loopMainThreadForAtLeast(keysToBeHit.size() * 500);
+      } else {
+        for (KeyInfo keyInfo : keysToBeHit) {
+          KeyboardSwitcher.injectTap(keyInfo.getLocation().getAbsoluteX(),
+              keyInfo.getLocation().getAbsoluteY(), uiAutomation, false);
+
+          uiController.loopMainThreadUntilIdle();
+        }
       }
-
-      interactive = builder.open(null);
-
-      // todo: use IdlingResource
-      uiController.loopMainThreadForAtLeast(keysToBeHit.size() * 500);
     }
   }
 

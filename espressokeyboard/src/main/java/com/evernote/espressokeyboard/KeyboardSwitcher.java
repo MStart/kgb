@@ -12,11 +12,17 @@ package com.evernote.espressokeyboard;
  */
 
 import android.accessibilityservice.AccessibilityService;
+import android.annotation.TargetApi;
+import android.app.ActivityManager;
+import android.app.UiAutomation;
 import android.content.Context;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Handler;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.InputDevice;
+import android.view.MotionEvent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.InputMethodInfo;
@@ -29,9 +35,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Service in charge of switching the IME during orientation change
- *
- * @author ne0fhyk
+ * This class can function either as an AccessibilityService (you'll probably have to subclass it
+ * as AccessibilityServiceProxy so you can add it to your AndroidManifest.xml), or as a
+ * {@code UiAutomation#OnAccessibilityEventListener} delegate (for JellyBean MR2 and later)
  */
 public class KeyboardSwitcher extends AccessibilityService {
   private static final String TAG = KeyboardSwitcher.class.getName();
@@ -48,6 +54,26 @@ public class KeyboardSwitcher extends AccessibilityService {
   public static boolean sIsEnabled = false;
 
   private final static Map<String, InputMethodInfo> sImiCache = new HashMap<>();
+  private final UiAutomation mAutomation;
+
+  /**
+   * When started as a real AccessibilityService
+   */
+  public KeyboardSwitcher() {
+    super();
+    mAutomation = null;
+  }
+
+  /**
+   * When created manually as an accessibility event delegate
+   *
+   * @param baseContext the context this class will use
+   * @param automation the automation instance use to inject taps
+   */
+  public KeyboardSwitcher(Context baseContext, UiAutomation automation) {
+    mAutomation = automation;
+    attachBaseContext(baseContext);
+  }
 
   @Override
   public void onAccessibilityEvent(AccessibilityEvent event) {
@@ -73,7 +99,6 @@ public class KeyboardSwitcher extends AccessibilityService {
 
     final AccessibilityNodeInfo nodeInfo = event.getSource();
     if (nodeInfo != null) {
-
       if (sNextKeyboard != null) {
         // Get the label from the keyboard id
         InputMethodInfo configImi = retrieveFromCache(sNextKeyboard);
@@ -90,6 +115,16 @@ public class KeyboardSwitcher extends AccessibilityService {
 
               if (keyboardContainer.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
                 dismissIMP = false;
+              } else {
+                if (mAutomation != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                  Rect bounds = new Rect();
+                  keyboardNodeInfo.getBoundsInScreen(bounds);
+                  injectTap(bounds.centerX(), bounds.centerY(), mAutomation, true);
+
+                  dismissIMP = false;
+                } else {
+                  Log.d(TAG, "Couldn't perform action, no automation");
+                }
               }
 
               keyboardNodeInfo.recycle();
@@ -99,20 +134,59 @@ public class KeyboardSwitcher extends AccessibilityService {
                 new Handler().postDelayed(sIMESwitchListener, 1000);
                 sIMESwitchListener = null;
               }
+            } else {
+              Log.d(TAG, "Keyboard matching list empty");
             }
+          } else {
+            Log.d(TAG, "Keyboard label not found");
           }
+        } else {
+          Log.d(TAG, "Keyboard not found in cache");
         }
+      } else {
+        Log.d(TAG, "No next keyboard set");
       }
 
       nodeInfo.recycle();
+    } else {
+      Log.d(TAG, "event.getSource() is null");
     }
 
     if (dismissIMP) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
         Log.d(TAG, "Performing global back action.");
-        performGlobalAction(GLOBAL_ACTION_BACK);
+
+        if (!performGlobalAction(GLOBAL_ACTION_BACK) &&
+            mAutomation != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+          mAutomation.performGlobalAction(GLOBAL_ACTION_BACK);
+        }
       }
     }
+  }
+
+  @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+  public static void injectTap(int x, int y, UiAutomation uiAutomation, boolean sync) {
+    long downTime = System.currentTimeMillis();
+    MotionEvent eventDown = MotionEvent.obtain(downTime,
+        downTime, MotionEvent.ACTION_DOWN,
+        x, y, 0);
+    eventDown.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+    Log.d(TAG, "Injecting " + eventDown);
+
+    if (!uiAutomation.injectInputEvent(eventDown, sync)) {
+      Log.d(TAG, "Injection failed");
+    }
+
+    MotionEvent eventUp = MotionEvent.obtain(eventDown);
+    eventUp.setAction(MotionEvent.ACTION_UP);
+
+    Log.d(TAG, "Injecting " + eventUp);
+    if (!uiAutomation.injectInputEvent(eventUp, sync)) {
+      Log.d(TAG, "Injection failed");
+    }
+
+    eventDown.recycle();
+    eventUp.recycle();
   }
 
   public static void launchInputMethodPicker(Context context,
@@ -180,8 +254,21 @@ public class KeyboardSwitcher extends AccessibilityService {
     sIsEnabled = false;
   }
 
-  public static boolean isAccessibilityServiceEnabled() {
-    return sIsEnabled;
+  public static boolean isAccessibilityServiceEnabled(Context context) {
+    if (sIsEnabled) return true;
+
+    ActivityManager manager = (ActivityManager) context
+        .getSystemService(Context.ACTIVITY_SERVICE);
+    for (ActivityManager.RunningServiceInfo service : manager
+        .getRunningServices(Integer.MAX_VALUE)) {
+      if (service.service.getPackageName().equals(context.getPackageName())
+          && service.service.getShortClassName().contains("KeyboardSwitcher")) {
+        // let's not forget the name can change (suggested name is KeyboardSwitcherProxy)
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public static boolean nextKeyboard(Context context) {
@@ -199,10 +286,10 @@ public class KeyboardSwitcher extends AccessibilityService {
       if (keyboard.equals(currentKeyboard)) {
         if (i + 1 < keyboards.size()) {
           launchInputMethodPicker(context, keyboards.get(i + 1), listener);
-          return true;
         } else {
-          return false;
+          launchInputMethodPicker(context, keyboards.get(0), listener);
         }
+        return true;
       }
     }
 
