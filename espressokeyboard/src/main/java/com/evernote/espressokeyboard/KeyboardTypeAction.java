@@ -34,7 +34,7 @@ import eu.chainfire.libsuperuser.Shell;
  */
 public class KeyboardTypeAction implements ViewAction, IdlingResource {
   private static final String TAG = KeyboardTypeAction.class.getSimpleName();
-  private boolean tapToFocus;
+  private boolean tapToFocus = true;
   private UiAutomation uiAutomation = null;
   private Shell.Interactive interactive;
   List<KeyInfo> keysToBeHit = new ArrayList<>();
@@ -148,14 +148,15 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
         interactive = builder.open(null);
 
         // todo: use IdlingResource
-        uiController.loopMainThreadForAtLeast(keysToBeHit.size() * 500);
+        uiController.loopMainThreadForAtLeast(Math.max(keysToBeHit.size() * 500, 1000));
       } else {
         for (KeyInfo keyInfo : keysToBeHit) {
           KeyboardSwitcher.injectTap(keyInfo.getLocation().getAbsoluteX(),
               keyInfo.getLocation().getAbsoluteY(), uiAutomation, false);
-
           uiController.loopMainThreadUntilIdle();
         }
+
+        uiController.loopMainThreadForAtLeast(Math.max(keysToBeHit.size() * 100, 1000));
       }
     }
   }
