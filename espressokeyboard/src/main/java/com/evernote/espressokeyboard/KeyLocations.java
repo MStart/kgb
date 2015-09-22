@@ -5,6 +5,7 @@ package com.evernote.espressokeyboard;
 
 import android.content.Context;
 import android.graphics.Point;
+import android.os.Build;
 import android.util.Log;
 
 import com.squareup.okhttp.HttpUrl;
@@ -44,16 +45,21 @@ public class KeyLocations {
   HashMap<Key, KeyInfo> keys = new HashMap<>();
 
   private KeyLocations(Context context) {
-    try {
-      Class.forName("eu.chainfire.libsuperuser.Shell");
-    } catch (ClassNotFoundException e) {
-      throw new IllegalStateException("libsuperuser dependency not met. Add \"testCompile " +
-          "'eu.chainfire:libsuperuser:1.0.0.+'\" to your build.gradle");
-    }
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2) {
+      Log.i(TAG, "Older platform, requires root");
+      try {
+        Class.forName("eu.chainfire.libsuperuser.Shell");
+      } catch (ClassNotFoundException e) {
+        throw new IllegalStateException("libsuperuser dependency not met. Add \"testCompile " +
+            "'eu.chainfire:libsuperuser:1.0.0.+'\" to your build.gradle");
+      }
 
-    if (!Shell.SU.available()) {
-      throw new IllegalStateException("This device is not rooted or you did not grand root access, " +
-          "any tests depending on direct keyboard stimulation will not run");
+      if (!Shell.SU.available()) {
+        throw new IllegalStateException("This device is not rooted or you did not grand root access, " +
+            "any tests depending on direct keyboard stimulation will not run");
+      }
+    } else {
+      Log.i(TAG, "Will use uiAutomation for event injection");
     }
 
     try {
