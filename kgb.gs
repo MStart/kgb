@@ -16,11 +16,20 @@ var id = '15sKldjTZ0YbtfihlSKzEgikCJL6hMNtKuWIIpudvPBQ'; // Spreadsheet id for r
 
 
 function testPost() {
-  handlePost({run:{run:"b2c8576c-c138-4eff-b708-19a3bce3ee04"},keys:[{absolute_x:1}, {absolute_y:2}]});
+  return ContentService.createTextOutput(JSON.stringify(handlePost(
+    {run:{run:"b2c8576c-c138-4eff-b708-19a3bce3ee04"},keys:[{absolute_x:1}, {absolute_y:2}]})));
 }
 
 function testGet() {
-  handleGet({keyboard: 'org.pocketworkstation.pckeyboard/.LatinIME'});
+  return doGet({parameter:{config:JSON.stringify(
+    {keyboard: 'org.pocketworkstation.pckeyboard/.LatinIME'}
+  )}});
+}
+
+function testGets() {
+  return doGet({parameter:{config:JSON.stringify(
+    {keyboard: ['org.pocketworkstation.pckeyboard/.LatinIME', 'com.android.inputmethod.latin/.LatinIME']}
+  )}});
 }
 
 function doGet(e) {
@@ -29,7 +38,21 @@ function doGet(e) {
     // to allow debugging POST requests with a simple GET
     return handlePost(JSON.parse(e.parameter['fakePost']));
   } else {
-    return handleGet(JSON.parse(e.parameter['config']));
+    var config = JSON.parse(e.parameter['config']);
+    
+    if (Array.isArray(config.keyboard)) {
+      var keyboards = config.keyboard;
+      var result = {};
+      
+      keyboards.forEach(function(keyboard) {
+        config.keyboard = keyboard;
+        result[keyboard] = handleGet(config);
+      });
+      
+      return ContentService.createTextOutput(JSON.stringify(result));
+    } else {
+      return ContentService.createTextOutput(JSON.stringify(handleGet(config)));
+    }
   }
 }
 
@@ -157,5 +180,5 @@ function handleGet(config) {
   }
   
   // Return result of operation
-  return ContentService.createTextOutput(JSON.stringify({keys: keysResult, run: runResult}));
+  return {keys: keysResult, run: runResult};
 }

@@ -6,6 +6,7 @@ package com.evernote.espressokeyboard;
 import android.content.Context;
 import android.graphics.Point;
 import android.os.Build;
+import android.provider.Settings;
 import android.util.Log;
 
 import com.squareup.okhttp.HttpUrl;
@@ -20,6 +21,8 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 
 import eu.chainfire.libsuperuser.Shell;
 
@@ -42,7 +45,8 @@ public class KeyLocations {
   public static final String TAG = "KeyLocations";
   static KeyLocations instance = null;
 
-  HashMap<Key, KeyInfo> keys = new HashMap<>();
+  HashMap<String, HashMap<Key, KeyInfo>> keyboardKeys = new HashMap<>();
+  HashMap<Key, KeyInfo> keys;
 
   private KeyLocations(Context context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2) {
@@ -69,6 +73,10 @@ public class KeyLocations {
 
       JSONObject jsonConfig = ConfigHelper.getConfig(context);
 
+      List<String> keyboards = KeyboardSwitcher.getKeyboards(context);
+
+      jsonConfig.put(ConfigHelper.KEYBOARD, new JSONArray(keyboards));
+
       //noinspection deprecation
       Request request = new Request.Builder()
           .url(HttpUrl.parse("https://script.google.com/macros/s/AKfycbyE7NEzpm6sGFhNd9j22QkI5RS6rpGeVDv6J5EHEUCl3Gy6AFU/exec")
@@ -83,54 +91,58 @@ public class KeyLocations {
 
       JSONObject responseJson = new JSONObject(response.body().string());
 
-      JSONArray jsonKeys = responseJson.getJSONArray("keys");
-      JSONObject jsonMatchedConfig = responseJson.getJSONObject("run");
+      Iterator<String> it = responseJson.keys();
+      while (it.hasNext()) {
+        String keyboardName = it.next();
+        JSONObject keyboardValue = responseJson.getJSONObject(keyboardName);
+        JSONArray jsonKeys = keyboardValue.getJSONArray("keys");
+        JSONObject jsonMatchedConfig = keyboardValue.getJSONObject("run");
 
-      Log.d(TAG, "Matched config: " + jsonMatchedConfig);
+        Log.d(TAG, "Matched config: " + jsonMatchedConfig);
 
-      if (!Objects.equals(jsonConfig.optString(KEYBOARD), jsonMatchedConfig.optString(KEYBOARD))) {
-        throw new IllegalStateException("The current keyboard hasn't been uploaded to the database: current " + jsonConfig + " - matched " + jsonMatchedConfig);
-      }
-
-      if (!Objects.equals(jsonConfig.optString(LANGUAGE), jsonMatchedConfig.optString(LANGUAGE))) {
-        throw new IllegalStateException("The current language hasn't been uploaded to the database: current " + jsonConfig + " - matched " + jsonMatchedConfig);
-      }
-
-      if (!Objects.equals(jsonConfig.optString(ORIENTATION), jsonMatchedConfig.optString(ORIENTATION))) {
-        throw new IllegalStateException("The current orientation hasn't been uploaded to the database: current " + jsonConfig + " - matched " + jsonMatchedConfig);
-      }
-
-      // need to project key locations?
-      Point currentNavBarSize = new Point(jsonConfig.getInt(NAVBAR_W), jsonConfig.getInt(NAVBAR_H));
-      Point matchedNavBarSize = new Point(jsonMatchedConfig.getInt(NAVBAR_W), jsonMatchedConfig.getInt(NAVBAR_H));
-      Point translate;
-      float scaleX = 1, scaleY = 1;
-      if (Objects.equals(jsonConfig.optString(DEVICE), jsonMatchedConfig.optString(DEVICE))
-          && Objects.equals(jsonConfig.optString(DENSITY), jsonMatchedConfig.optString(DENSITY))
-          && Objects.equals(currentNavBarSize, matchedNavBarSize)
-          && Objects.equals(jsonConfig.optString(FONT_SCALE), jsonMatchedConfig.optString(FONT_SCALE))) {
-        translate = new Point(0, 0);
-      } else {
-        Point currentSize = new Point(jsonConfig.getInt(SCREEN_W), jsonConfig.getInt(SCREEN_H));
-        Point matchedSize = new Point(jsonMatchedConfig.getInt(SCREEN_W), jsonMatchedConfig.getInt(SCREEN_H));
-
-        scaleX = currentSize.x / matchedSize.x;
-        scaleY = currentSize.y / matchedSize.y;
-        if (ORIENTATION_PORTRAIT.equals(jsonConfig.optString(ORIENTATION))) {
-          translate = new Point(0, matchedNavBarSize.y - currentNavBarSize.y);
-        } else {
-          translate = new Point(matchedNavBarSize.x - currentNavBarSize.x, 0);
+        if (!Objects.equals(jsonConfig.optString(LANGUAGE), jsonMatchedConfig.optString(LANGUAGE))) {
+          throw new IllegalStateException("The current language hasn't been uploaded to the database: current " + jsonConfig + " - matched " + jsonMatchedConfig);
         }
 
-        Log.d(TAG, "Reprojecting: translation " + translate + " - scale " + scaleX + "," + scaleY);
-      }
+        if (!Objects.equals(jsonConfig.optString(ORIENTATION), jsonMatchedConfig.optString(ORIENTATION))) {
+          throw new IllegalStateException("The current orientation hasn't been uploaded to the database: current " + jsonConfig + " - matched " + jsonMatchedConfig);
+        }
 
-      for (int i = 0; i < jsonKeys.length(); i++) {
-        KeyInfo keyInfo = new KeyInfo(jsonKeys.getJSONObject(i), translate, scaleX, scaleY);
-        keys.put(keyInfo.getKey(), keyInfo);
-      }
+        // need to project key locations?
+        Point currentNavBarSize = new Point(jsonConfig.getInt(NAVBAR_W), jsonConfig.getInt(NAVBAR_H));
+        Point matchedNavBarSize = new Point(jsonMatchedConfig.getInt(NAVBAR_W), jsonMatchedConfig.getInt(NAVBAR_H));
+        Point translate;
+        float scaleX = 1, scaleY = 1;
+        if (Objects.equals(jsonConfig.optString(DEVICE), jsonMatchedConfig.optString(DEVICE))
+            && Objects.equals(jsonConfig.optString(DENSITY), jsonMatchedConfig.optString(DENSITY))
+            && Objects.equals(currentNavBarSize, matchedNavBarSize)
+            && Objects.equals(jsonConfig.optString(FONT_SCALE), jsonMatchedConfig.optString(FONT_SCALE))) {
+          translate = new Point(0, 0);
+        } else {
+          Point currentSize = new Point(jsonConfig.getInt(SCREEN_W), jsonConfig.getInt(SCREEN_H));
+          Point matchedSize = new Point(jsonMatchedConfig.getInt(SCREEN_W), jsonMatchedConfig.getInt(SCREEN_H));
 
-      Log.d(TAG, "KeyLocations: " + keys);
+          scaleX = currentSize.x / matchedSize.x;
+          scaleY = currentSize.y / matchedSize.y;
+          if (ORIENTATION_PORTRAIT.equals(jsonConfig.optString(ORIENTATION))) {
+            translate = new Point(0, matchedNavBarSize.y - currentNavBarSize.y);
+          } else {
+            translate = new Point(matchedNavBarSize.x - currentNavBarSize.x, 0);
+          }
+
+          Log.d(TAG, "Reprojecting: translation " + translate + " - scale " + scaleX + "," + scaleY);
+        }
+
+        keys = new HashMap<>();
+        for (int i = 0; i < jsonKeys.length(); i++) {
+          KeyInfo keyInfo = new KeyInfo(jsonKeys.getJSONObject(i), translate, scaleX, scaleY);
+          keys.put(keyInfo.getKey(), keyInfo);
+        }
+
+        Log.d(TAG, "KeyLocations: " + keys);
+
+        keyboardKeys.put(keyboardName, keys);
+      }
     } catch (IOException e) {
       e.printStackTrace();
       throw new IllegalStateException("Network issue", e);
@@ -182,6 +194,24 @@ public class KeyLocations {
 
   public KeyInfo findCompletion() {
     return findKey(Key.getCompletion());
+  }
+
+  /**
+   * If more than one keyboard is in use, clients must call this before
+   * using {@code findKey}
+   * @param currentKeyboard the ID of the current keyboard
+   */
+  public void setCurrentKeyboard(String currentKeyboard) {
+    keys = keyboardKeys.get(currentKeyboard);
+
+    if (keys == null) {
+      throw new IllegalStateException("Unknown keyboard " + currentKeyboard);
+    }
+  }
+
+  public void setCurrentKeyboard(Context context) {
+    setCurrentKeyboard(Settings.Secure.getString(context.getContentResolver(),
+        Settings.Secure.DEFAULT_INPUT_METHOD));
   }
 
   private KeyInfo findKey(Key key) {
