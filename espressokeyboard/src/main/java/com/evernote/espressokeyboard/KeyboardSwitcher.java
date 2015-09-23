@@ -189,9 +189,9 @@ public class KeyboardSwitcher extends AccessibilityService {
     eventUp.recycle();
   }
 
-  public static void launchInputMethodPicker(Context context,
-                                             String nextKeyboard,
-                                             Runnable listener) {
+  public static void switchKeyboard(Context context,
+                                    String nextKeyboard,
+                                    Runnable listener) {
     sNextKeyboard = nextKeyboard;
     sIMESwitchListener = listener;
     sIMPLaunchTime = System.currentTimeMillis();
@@ -285,9 +285,9 @@ public class KeyboardSwitcher extends AccessibilityService {
       String keyboard = keyboards.get(i);
       if (keyboard.equals(currentKeyboard)) {
         if (i + 1 < keyboards.size()) {
-          launchInputMethodPicker(context, keyboards.get(i + 1), listener);
+          switchKeyboard(context, keyboards.get(i + 1), listener);
         } else {
-          launchInputMethodPicker(context, keyboards.get(0), listener);
+          switchKeyboard(context, keyboards.get(0), listener);
         }
         return true;
       }

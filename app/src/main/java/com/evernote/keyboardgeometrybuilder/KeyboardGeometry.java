@@ -350,7 +350,7 @@ public class KeyboardGeometry extends AppCompatActivity implements SoftKeyboardS
       logTitle("You can quit now");
     } else {
       logTitle("Switching to next keyboard");
-      KeyboardSwitcher.launchInputMethodPicker(this, keyboards.iterator().next(), new Runnable() {
+      KeyboardSwitcher.switchKeyboard(this, keyboards.iterator().next(), new Runnable() {
         @Override
         public void run() {
           if (!isFinishing()) {
