@@ -9,6 +9,8 @@ package com.evernote.espressokeyboard;
 public class KeyLocation {
   private final int absoluteX, absoluteY;
 
+  public static KeyLocation NONE = new KeyLocation(0, 0);
+
   public KeyLocation(int absoluteX, int absoluteY) {
     this.absoluteX = absoluteX;
     this.absoluteY = absoluteY;
