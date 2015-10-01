@@ -84,6 +84,12 @@ public class KeyInfo {
         Key.getCompletion());
   }
 
+  public static KeyInfo getFallbackKey(String character) {
+    return new KeyInfo(
+        KeyLocation.NONE,
+        Key.getCharacter(character));
+  }
+
   public KeyLocation getLocation() {
     return location;
   }

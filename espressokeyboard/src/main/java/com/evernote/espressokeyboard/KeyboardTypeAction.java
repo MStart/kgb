@@ -7,6 +7,8 @@ import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.os.Build;
 import android.support.test.espresso.IdlingResource;
+import android.support.test.espresso.InjectEventSecurityException;
+import android.support.test.espresso.PerformException;
 import android.support.test.espresso.UiController;
 import android.support.test.espresso.ViewAction;
 import android.support.test.espresso.action.GeneralClickAction;
@@ -15,6 +17,7 @@ import android.support.test.espresso.action.Press;
 import android.support.test.espresso.action.Tap;
 import android.support.test.espresso.core.deps.guava.base.Preconditions;
 import android.support.test.espresso.matcher.ViewMatchers;
+import android.support.test.espresso.util.HumanReadables;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -39,6 +42,7 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
   private Shell.Interactive interactive;
   List<KeyInfo> keysToBeHit = new ArrayList<>();
   StringBuilder description = new StringBuilder();
+  boolean fallbackToInjection = false;
 
   public KeyboardTypeAction(UiAutomation uiAutomation) {
     this.uiAutomation = uiAutomation;
@@ -83,7 +87,17 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
           c = Character.toLowerCase(c);
         }
 
-        keysToBeHit.add(KeyLocations.instance().findStandard(c));
+        try {
+          keysToBeHit.add(KeyLocations.instance().findStandard(c));
+        } catch (IllegalStateException e) {
+          if (fallbackToInjection) {
+            Log.w(TAG, "Using fallback for " + c);
+
+            keysToBeHit.add(KeyInfo.getFallbackKey("" + c));
+          } else {
+            throw e;
+          }
+        }
       }
     }
 
@@ -107,6 +121,18 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
 
   public KeyboardTypeAction addCompletion() {
     return add(KeyLocations.instance().findCompletion());
+  }
+
+  public KeyboardTypeAction setFallbackToInjection(boolean fallbackToInjection) {
+    this.fallbackToInjection = fallbackToInjection;
+
+    return this;
+  }
+
+  public KeyboardTypeAction setTapToFocus(boolean tapToFocus) {
+    this.tapToFocus = tapToFocus;
+
+    return this;
   }
 
   private void appendDescription(String s) {
@@ -142,7 +168,13 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
         Shell.Builder builder = new Shell.Builder().useSU();
 
         for (KeyInfo keyInfo : keysToBeHit) {
-          builder.addCommand("input tap " + keyInfo.getLocation().getAbsoluteX() + " " + keyInfo.getLocation().getAbsoluteY());
+          KeyLocation location = keyInfo.getLocation();
+
+          if (location != KeyLocation.NONE) {
+            builder.addCommand("input tap " + location.getAbsoluteX() + " " + location.getAbsoluteY());
+          } else {
+            builder.addCommand("input text \"" + keyInfo.getKey().getCharacter() + "\"");
+          }
         }
 
         interactive = builder.open(null);
@@ -151,8 +183,23 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
         uiController.loopMainThreadForAtLeast(Math.max(keysToBeHit.size() * 500, 1000));
       } else {
         for (KeyInfo keyInfo : keysToBeHit) {
-          KeyboardSwitcher.injectTap(keyInfo.getLocation().getAbsoluteX(),
-              keyInfo.getLocation().getAbsoluteY(), uiAutomation, false);
+          KeyLocation location = keyInfo.getLocation();
+
+          if (location != KeyLocation.NONE) {
+            KeyboardSwitcher.injectTap(location.getAbsoluteX(),
+                location.getAbsoluteY(), uiAutomation, false);
+          } else {
+            try {
+              uiController.injectString(keyInfo.getKey().getCharacter());
+            } catch (InjectEventSecurityException e) {
+              Log.e(TAG, "Failed to type character: " + keyInfo.getKey().getCharacter());
+              throw new PerformException.Builder()
+                  .withActionDescription(this.getDescription())
+                  .withViewDescription(HumanReadables.describe(view))
+                  .withCause(e)
+                  .build();
+            }
+          }
           uiController.loopMainThreadUntilIdle();
         }
 
