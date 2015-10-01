@@ -129,6 +129,12 @@ public class KeyboardTypeAction implements ViewAction, IdlingResource {
     return this;
   }
 
+  public KeyboardTypeAction setTapToFocus(boolean tapToFocus) {
+    this.tapToFocus = tapToFocus;
+
+    return this;
+  }
+
   private void appendDescription(String s) {
     if (description.length() != 0) {
       description.append(", ");
