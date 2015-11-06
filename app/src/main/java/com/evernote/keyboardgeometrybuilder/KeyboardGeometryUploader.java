@@ -7,6 +7,7 @@ import android.content.Context;
 
 import com.evernote.espressokeyboard.ConfigHelper;
 import com.evernote.espressokeyboard.KeyInfo;
+import com.evernote.espressokeyboard.KeyLocations;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
@@ -60,7 +61,7 @@ public class KeyboardGeometryUploader {
 
     RequestBody body = RequestBody.create(JSON, jsonBody.toString());
     Request request = new Request.Builder()
-        .url("https://script.google.com/macros/s/AKfycbyE7NEzpm6sGFhNd9j22QkI5RS6rpGeVDv6J5EHEUCl3Gy6AFU/exec")
+        .url(KeyLocations.MACRO_URL)
         .post(body)
         .build();
     Response response = client.newCall(request).execute();

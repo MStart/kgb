@@ -29,7 +29,6 @@ import eu.chainfire.libsuperuser.Shell;
 import static com.evernote.espressokeyboard.ConfigHelper.DENSITY;
 import static com.evernote.espressokeyboard.ConfigHelper.DEVICE;
 import static com.evernote.espressokeyboard.ConfigHelper.FONT_SCALE;
-import static com.evernote.espressokeyboard.ConfigHelper.KEYBOARD;
 import static com.evernote.espressokeyboard.ConfigHelper.LANGUAGE;
 import static com.evernote.espressokeyboard.ConfigHelper.NAVBAR_H;
 import static com.evernote.espressokeyboard.ConfigHelper.NAVBAR_W;
@@ -43,6 +42,8 @@ import static com.evernote.espressokeyboard.ConfigHelper.SCREEN_W;
  */
 public class KeyLocations {
   public static final String TAG = "KeyLocations";
+  public static final String MACRO_ID = "AKfycbyE7NEzpm6sGFhNd9j22QkI5RS6rpGeVDv6J5EHEUCl3Gy6AFU";
+  public static final String MACRO_URL = "https://script.google.com/macros/s/" + MACRO_ID + "/exec";
   static KeyLocations instance = null;
 
   HashMap<String, HashMap<Key, KeyInfo>> keyboardKeys = new HashMap<>();
@@ -79,7 +80,7 @@ public class KeyLocations {
 
       //noinspection deprecation
       Request request = new Request.Builder()
-          .url(HttpUrl.parse("https://script.google.com/macros/s/AKfycbyE7NEzpm6sGFhNd9j22QkI5RS6rpGeVDv6J5EHEUCl3Gy6AFU/exec")
+          .url(HttpUrl.parse(MACRO_URL)
               .newBuilder()
                   // HttpUrl.Builder doesn't properly encode curly braces (at least from java.net.URI's point of view)
                   //.setQueryParameter("config", jsonConfig.toString())
