@@ -2,7 +2,7 @@
 
 ## What is it?
 
-The Keyboard Geometry Builder (kgb) is a test tool to help reduce the incidences of regression stemming from difficulties in correctly handling the wide variety of Android keyboards, and how they interact (in particular) with the WebView used by the new note Editor in the Evernote application.
+The Keyboard Geometry Builder (kgb) is a test tool to help reduce the incidences of regression stemming from difficulties in correctly handling the wide variety of Android keyboards, and how they interact (in particular) with WebViews.
 
 ## Why is it needed?
 
@@ -47,7 +47,7 @@ Requirements:
 * Android 4.3 or rooted device (with Android 4.3, UiAutomator is used to inject taps on the keyboard and switching keyboards)
 * network access
 
-With Android 4.2 and earlier, the first time tests are run on a given device, root access must be granted to the Evernote app.
+With Android 4.2 and earlier, the first time tests are run on a given device, root access must be granted to the application.
 
 # How to build the espressokeyboard library
 
