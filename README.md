@@ -107,3 +107,10 @@ Disclaimer: there’s a long pause at the beginning… but then it goes on to te
     THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
     THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+### Other licenses
+
+Two files in this repo are licensed differently than the rest:
+
+* [KeyboardSwitcher.java](espressokeyboard/src/main/java/com/evernote/espressokeyboard/KeyboardSwitcher.java) is licensed under the Mozilla Public License
+* [SoftKeyboardStateHelper.java](app/src/main/java/com/evernote/keyboardgeometrybuilder/SoftKeyboardStateHelper.java) is licensed CC BY-SA 3.0, per Stack Overflow's default contributor license

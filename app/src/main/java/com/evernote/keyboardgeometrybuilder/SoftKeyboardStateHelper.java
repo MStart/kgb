@@ -13,11 +13,9 @@ import java.util.List;
  * Helper to keep track of whether the soft keyboard is on screen or not.  This is good to use
  * standalone for Activities, but for Fragments, just use onKeyboardStateChanged
  *
- * Created by janders on 4/1/15.
+ * CC BY-SA 3.0 attribution: Artem Zinnatullin
  *
- * Copyright (c) 2015 Evernote Corporation. All rights reserved.
- *
- * http://stackoverflow.com/questions/2150078/how-to-check-visibility-of-software-keyboard-in-android#
+ * http://stackoverflow.com/a/19354201/304876
  *
  */
 public class SoftKeyboardStateHelper implements ViewTreeObserver.OnGlobalLayoutListener {

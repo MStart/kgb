@@ -9,6 +9,8 @@ package com.evernote.espressokeyboard;
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Changelog: 2015/09 ppaour@evernote.com: Updated for more error-checking, tap injection
  */
 
 import android.accessibilityservice.AccessibilityService;
@@ -47,7 +49,7 @@ public class KeyboardSwitcher extends AccessibilityService {
 
   public static final String PACKAGE_NAME_ANDROID_SYSTEM_UI_PREFIX = "com.android.systemui";
 
-  private final static long IMP_RECEIPT_TIME_INTERVAL = 500l; // 0.5 seconds
+  private final static long IMP_RECEIPT_TIME_INTERVAL = 500L; // 0.5 seconds
   private static long sIMPLaunchTime;
   private static String sNextKeyboard = null;
   private static Runnable sIMESwitchListener;
