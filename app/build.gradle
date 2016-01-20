@@ -1,15 +1,15 @@
 apply plugin: 'com.android.application'
 
 android {
-  compileSdkVersion 22
-  buildToolsVersion "22.0.1"
+  compileSdkVersion rootProject.ext.compileSdkVersion
+  buildToolsVersion rootProject.ext.buildToolsVersion
 
   defaultConfig {
     applicationId "com.evernote.keyboardgeometrybuilder"
-    minSdkVersion 14
-    targetSdkVersion 22
-    versionCode 1
-    versionName "1.0"
+    minSdkVersion rootProject.ext.minSdkVersion
+    targetSdkVersion rootProject.ext.targetSdkVersion
+    versionCode Integer.parseInt(project.VERSION_CODE)
+    versionName project.VERSION_NAME
 
     testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
   }

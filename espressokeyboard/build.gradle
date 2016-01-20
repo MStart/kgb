@@ -1,18 +1,23 @@
 apply plugin: 'com.android.library'
 apply plugin: 'maven-publish'
+apply plugin: 'com.github.ben-manes.versions'
 
 group = 'com.evernote'
-version = '0.1-SNAPSHOT'
+version = project.VERSION_NAME
+
+configurations {
+  javadocDeps
+}
 
 android {
-  compileSdkVersion 22
-  buildToolsVersion "22.0.1"
+  compileSdkVersion rootProject.ext.compileSdkVersion
+  buildToolsVersion rootProject.ext.buildToolsVersion
 
   defaultConfig {
-    minSdkVersion 14
-    targetSdkVersion 22
-    versionCode 1
-    versionName "1.0"
+    minSdkVersion rootProject.ext.minSdkVersion
+    targetSdkVersion rootProject.ext.targetSdkVersion
+    versionCode Integer.parseInt(project.VERSION_CODE)
+    versionName project.VERSION_NAME
   }
 
   buildTypes {
@@ -29,6 +34,7 @@ dependencies {
   compile 'com.android.support.test:runner:0.3'
   compile 'com.android.support.test:rules:0.3'
   compile 'com.android.support.test.espresso:espresso-core:2.2'
+  javadocDeps 'com.android.support.test.espresso:espresso-core:2.2'
 }
 
 task initArtifactoryPomPath << {
@@ -53,3 +59,5 @@ publishing {
     }
   }
 }
+
+apply from: '../build-config/gradle-push.gradle'

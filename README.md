@@ -37,9 +37,19 @@ If you have multiple keyboards installed on the device, the builder will iterate
 
 You can stop the app by tapping the X in the upper-right (not pictured).
 
+## Usage
+
+Add the following dependency to your Gradle config:
+
+```groovy
+dependencies {
+    testCompile 'com.evernote:kgb:0.2.0'
+}
+```
+
 ## How to develop tests for it
 
-Current tests are in class `com/evernote/test/smoketests/KeyboardTests.java`
+Sample tests are in class `app/src/androidTest/java/com/evernote/keyboardgeometrybuilder/ApplicationTest.java`
 
 ## How to run tests
 
@@ -48,12 +58,6 @@ Requirements:
 * network access
 
 With Android 4.2 and earlier, the first time tests are run on a given device, root access must be granted to the application.
-
-# How to build the espressokeyboard library
-
-The main Android app uses the jenkins-built version of the library, but if you’re updating it and want to test, you can cause the Android client build to use a local build of the library:
-
-`./gradlew :espressokeyboard:assemble publishToMavenLocal`
 
 ## How can I keep my keyboard maps separate from the shared data?
 
