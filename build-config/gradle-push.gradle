@@ -30,7 +30,6 @@ def getRepositoryUsername() {
 }
 
 def getRepositoryPassword() {
-  println "Password " + SONATYPE_PASSWORD;
   return hasProperty('SONATYPE_PASSWORD') ? SONATYPE_PASSWORD : ""
 }
 
